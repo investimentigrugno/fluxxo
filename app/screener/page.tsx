@@ -12,26 +12,33 @@ export default function ScreenerPage() {
   const [loading, setLoading] = useState(false)
   const [activeFilter, setActiveFilter] = useState('all')
 
-  async function loadScreenerData(filterType: string) {
-    setLoading(true)
-    setActiveFilter(filterType)
-    
-    try {
-      const response = await fetch('/api/screener/multi-scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filterType })
-      })
+  async function loadScreenerData() {
+  setLoading(true)
+  
+  try {
+    const response = await fetch('/api/screener/multi-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}) // Nessun filtro
+    })
 
-      const data = await response.json()
-      setStocks(data.stocks || [])
-    } catch (error) {
-      console.error('Errore:', error)
-      alert('Errore caricamento screener')
-    } finally {
-      setLoading(false)
+    const data = await response.json()
+    
+    if (data.error) {
+      alert(`Errore: ${data.error}`)
+      return
     }
+    
+    setStocks(data.stocks || [])
+    
+  } catch (error: any) {
+    console.error('Errore:', error)
+    alert('Errore caricamento screener')
+  } finally {
+    setLoading(false)
   }
+}
+
 
   useEffect(() => {
     loadScreenerData('all')
@@ -46,52 +53,26 @@ export default function ScreenerPage() {
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">🔍 Screener Multi-Asset</h1>
 
-      {/* Filtri Predefiniti */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filtri Intelligenti</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2 flex-wrap">
-            <Button 
-              onClick={() => loadScreenerData('all')}
-              variant={activeFilter === 'all' ? 'default' : 'outline'}
-            >
-              🌍 Tutti ({stocks.length})
-            </Button>
-            <Button 
-              onClick={() => loadScreenerData('top_score')}
-              variant={activeFilter === 'top_score' ? 'default' : 'outline'}
-            >
-              ⭐ Top Score
-            </Button>
-            <Button 
-              onClick={() => loadScreenerData('value')}
-              variant={activeFilter === 'value' ? 'default' : 'outline'}
-            >
-              💎 Value Investing
-            </Button>
-            <Button 
-              onClick={() => loadScreenerData('growth')}
-              variant={activeFilter === 'growth' ? 'default' : 'outline'}
-            >
-              🚀 Growth
-            </Button>
-            <Button 
-              onClick={() => loadScreenerData('dividend')}
-              variant={activeFilter === 'dividend' ? 'default' : 'outline'}
-            >
-              💰 Dividend
-            </Button>
-            <Button 
-              onClick={() => loadScreenerData('momentum')}
-              variant={activeFilter === 'momentum' ? 'default' : 'outline'}
-            >
-              📈 Momentum
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Titolo e Refresh */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>📊 Top 100 Stock Screener</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <p className="text-gray-600">
+                100 migliori titoli filtrati da TradingView con Investment Score
+              </p>
+              <Button 
+                onClick={() => loadScreenerData()}
+                disabled={loading}
+              >
+                {loading ? '⏳ Caricamento...' : '🔄 Aggiorna Dati'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
 
       {loading && (
         <div className="text-center py-12">

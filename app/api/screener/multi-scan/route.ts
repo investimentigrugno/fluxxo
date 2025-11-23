@@ -3,9 +3,6 @@ import { calculateInvestmentScore, formatTechnicalRating, type ScoredStock } fro
 
 export async function POST(request: NextRequest) {
   try {
-    const { filterType } = await request.json()
-
-    // URL Python service su Railway
     const pythonUrl = process.env.PYTHON_SERVICE_URL
     
     if (!pythonUrl) {
@@ -14,24 +11,23 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔍 Calling Python service: ${pythonUrl}/api/scan`)
     
-    // Chiama Railway Python API
+    // Chiama Railway Python API (NESSUN FILTRO)
     const response = await fetch(`${pythonUrl}/api/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filterType }),
-      signal: AbortSignal.timeout(30000) // 30s timeout
+      body: JSON.stringify({}), // Corpo vuoto
+      signal: AbortSignal.timeout(30000)
     })
 
     if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Python API error: ${response.status} - ${error}`)
+      throw new Error(`Python API error: ${response.status}`)
     }
 
     const data = await response.json()
     
-    console.log(`✅ Received ${data.count} stocks from Python API`)
+    console.log(`✅ Received ${data.count} stocks`)
     
-    // Applica scoring algorithm ai dati REALI
+    // Applica scoring algorithm
     const scoredStocks: ScoredStock[] = data.stocks.map((stock: any) => {
       const scored = calculateInvestmentScore(stock)
       scored.TechnicalRating = formatTechnicalRating(scored['Recommend.All'])
@@ -39,28 +35,21 @@ export async function POST(request: NextRequest) {
     })
 
     // Ordina per Investment Score
-    scoredStocks.sort((a: ScoredStock, b: ScoredStock) => b.InvestmentScore - a.InvestmentScore)
+    scoredStocks.sort((a: ScoredStock, b: ScoredStock) => 
+      b.InvestmentScore - a.InvestmentScore
+    )
 
     return NextResponse.json({ 
       stocks: scoredStocks,
       count: scoredStocks.length,
-      source: 'TradingView Real Data via Railway'
+      source: 'TradingView via Railway'
     })
 
   } catch (error: any) {
-    console.error('❌ Error calling Python service:', error)
-    
+    console.error('❌ Error:', error)
     return NextResponse.json({ 
       error: error.message,
-      stocks: [],
-      source: 'Error - Python service unavailable'
+      stocks: []
     }, { status: 500 })
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ 
-    message: 'Multi-scan API - Use POST with filterType',
-    pythonServiceConfigured: !!process.env.PYTHON_SERVICE_URL
-  })
 }
