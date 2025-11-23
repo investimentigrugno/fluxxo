@@ -13,13 +13,10 @@ def health():
 
 @app.route('/api/scan', methods=['POST'])
 def scan():
-    """
-    Scansione mercati completa identica a Streamlit
-    """
+    """Scansione mercati completa"""
     try:
         print("🔍 Starting TradingView scan...")
         
-        # Query IDENTICA a Streamlit
         query = (Query()
             .set_markets(
                 'america', 'australia', 'belgium', 'brazil', 'canada', 
@@ -66,10 +63,8 @@ def scan():
         if df.empty:
             return jsonify({'stocks': [], 'count': 0})
         
-        # Converti a dict
         stocks = df.to_dict('records')
         
-        # Pulisci NaN
         for stock in stocks:
             for k, v in stock.items():
                 if pd.isna(v):
@@ -88,7 +83,7 @@ def scan():
 
 @app.route('/api/fundamental', methods=['POST'])
 def get_fundamental():
-    """Analisi fondamentale identica a Streamlit"""
+    """Analisi fondamentale singolo ticker"""
     try:
         data = request.get_json() or {}
         ticker = data.get('ticker', '')
@@ -147,7 +142,6 @@ def get_fundamental():
         
         row = query[1].iloc[0].to_dict()
         
-        # Pulisci NaN
         for key, value in row.items():
             if pd.isna(value):
                 row[key] = None
