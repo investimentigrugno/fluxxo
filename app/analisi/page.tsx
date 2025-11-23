@@ -502,7 +502,7 @@ export default function AnalisiPage() {
                             <span className="text-sm">{label}</span>
                             <div className="text-right">
                               <span className="font-bold text-sm">
-                                ${fundamentalData[key]?.toFixed(2) || 'N/A'}
+                                {fundamentalData[key]?.toFixed(2) || 'N/A'}
                               </span>
                               <Badge 
                                 variant={fundamentalData.close > (fundamentalData[key] || 0) ? 'default' : 'secondary'} 
@@ -578,15 +578,15 @@ export default function AnalisiPage() {
                   <CardContent className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Upper:</span>
-                      <span className="font-bold">${fundamentalData['BB.upper']?.toFixed(2) || 'N/A'}</span>
+                      <span className="font-bold">{fundamentalData['BB.upper']?.toFixed(2) || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Middle:</span>
-                      <span className="font-bold">${fundamentalData['BB.middle']?.toFixed(2) || 'N/A'}</span>
+                      <span className="font-bold">{fundamentalData['BB.middle']?.toFixed(2) || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Lower:</span>
-                      <span className="font-bold">${fundamentalData['BB.lower']?.toFixed(2) || 'N/A'}</span>
+                      <span className="font-bold">{fundamentalData['BB.lower']?.toFixed(2) || 'N/A'}</span>
                     </div>
                     <Badge variant={
                       fundamentalData.close > (fundamentalData['BB.upper'] || Infinity) ? 'destructive' :
