@@ -1,5 +1,0 @@
-tradingview-screener==3.0.0
-yfinance==0.2.25
-pandas==2.2.3
-numpy==1.26.4
-requests==2.31.0

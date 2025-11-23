@@ -1,0 +1,5 @@
+mkdir -p api
+cat > api/requirements.txt << 'EOF'
+tradingview-screener==3.0.0
+pandas==2.1.4
+EOF
