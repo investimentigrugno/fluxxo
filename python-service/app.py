@@ -172,38 +172,41 @@ def get_fundamental():
 def get_ticker_info():
     try:
         data = request.get_json() or {}
-        ticker = data.get('ticker', '')
+        ticker_input = data.get('ticker', '')
         
-        if not ticker:
+        if not ticker_input:
             return jsonify({'error': 'Ticker richiesto'}), 400
         
-        # Pulisce il ticker in caso sia in formato EXCHANGE:TICKER
-        clean_ticker = ticker.split(':')[-1]
+        # Pulisce il ticker se ha formato EXCHANGE:TICKER (es: NASDAQ:AAPL -> AAPL)
+        clean_ticker = ticker_input.split(':')[-1]
         
-        stock = yf.Ticker(clean_ticker)
+        print(f"🔍 Fetching info for ticker: {clean_ticker}")
         
-        # Recupera informazioni
-        info = stock.info
+        # Usa yfinance con la sintassi corretta
+        ticker = yf.Ticker(clean_ticker)
         
-        # Raccogli prezzo corrente, con fallback
-        price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose', None)
+        # Ottieni currency
+        currency = ticker.info.get('currency', 'EUR')
+        
+        # Ottieni prezzo corrente con fallback
+        price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice') or ticker.info.get('previousClose')
+        
         if price is None:
-            return jsonify({'error': 'Prezzo non disponibile per ' + clean_ticker}), 404
+            return jsonify({'error': f'Prezzo non disponibile per {clean_ticker}'}), 404
         
-        currency = info.get('currency', 'EUR').upper()
+        name = ticker.info.get('longName', clean_ticker)
         
-        # Risposta JSON
+        print(f"✅ Price: {price} {currency}")
+        
         return jsonify({
             'price': float(price),
-            'currency': currency,
-            'name': info.get('longName', clean_ticker)
+            'currency': currency.upper(),
+            'name': name
         })
-
+        
     except Exception as e:
-        app.logger.error(f"Errore get_ticker_info: {str(e)}")
-        return jsonify({'error': 'Errore interno server: ' + str(e)}), 500
-
-
+        print(f"❌ Error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
