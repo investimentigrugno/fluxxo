@@ -1,50 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { calculateInvestmentScore, formatTechnicalRating } from '@/lib/scoringAlgorithm'
+import { calculateInvestmentScore, formatTechnicalRating, type ScoredStock } from '@/lib/scoringAlgorithm'
 
 export async function POST(request: NextRequest) {
   try {
     const { filterType } = await request.json()
 
-    // Chiama Python API Vercel
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // URL Python service su Railway
+    const pythonUrl = process.env.PYTHON_SERVICE_URL
     
-    const response = await fetch(`${baseUrl}/api/screener`, {
+    if (!pythonUrl) {
+      throw new Error('PYTHON_SERVICE_URL not configured')
+    }
+
+    console.log(`🔍 Calling Python service: ${pythonUrl}/api/scan`)
+    
+    // Chiama Railway Python API
+    const response = await fetch(`${pythonUrl}/api/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filterType })
+      body: JSON.stringify({ filterType }),
+      signal: AbortSignal.timeout(30000) // 30s timeout
     })
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`)
+      const error = await response.text()
+      throw new Error(`Python API error: ${response.status} - ${error}`)
     }
 
     const data = await response.json()
     
-    // Applica scoring algorithm ai dati reali
-    const scoredStocks = data.stocks.map((stock: any) => {
+    console.log(`✅ Received ${data.count} stocks from Python API`)
+    
+    // Applica scoring algorithm ai dati REALI
+    const scoredStocks: ScoredStock[] = data.stocks.map((stock: any) => {
       const scored = calculateInvestmentScore(stock)
       scored.TechnicalRating = formatTechnicalRating(scored['Recommend.All'])
-      scored.market = stock.country || 'Unknown'
       return scored
     })
 
     // Ordina per Investment Score
-    scoredStocks.sort((a, b) => b.InvestmentScore - a.InvestmentScore)
+    scoredStocks.sort((a: ScoredStock, b: ScoredStock) => b.InvestmentScore - a.InvestmentScore)
 
     return NextResponse.json({ 
       stocks: scoredStocks,
       count: scoredStocks.length,
-      source: 'TradingView Real Data'
+      source: 'TradingView Real Data via Railway'
     })
 
   } catch (error: any) {
-    console.error('Errore multi-scan:', error)
+    console.error('❌ Error calling Python service:', error)
     
-    // Fallback a dati mock se Python API fallisce
     return NextResponse.json({ 
       error: error.message,
       stocks: [],
-      source: 'Error - Check Python API'
+      source: 'Error - Python service unavailable'
     }, { status: 500 })
   }
+}
+
+export async function GET() {
+  return NextResponse.json({ 
+    message: 'Multi-scan API - Use POST with filterType',
+    pythonServiceConfigured: !!process.env.PYTHON_SERVICE_URL
+  })
 }
