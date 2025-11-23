@@ -27,6 +27,7 @@ export default function RootLayout({
                 <a href="/proposte" className="hover:text-blue-600">Proposte</a>
                 <a href="/ordini" className="hover:text-blue-600">Ordini</a>
                 <a href="/screener" className="hover:text-blue-600">Screener</a>
+                <a href="/analisi" className="hover:text-blue-600">Analisi</a>
               </div>
             </div>
           </div>

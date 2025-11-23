@@ -1,125 +1,215 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2 } from 'lucide-react'
 
 export default function ScreenerPage() {
-  const [tickerSearch, setTickerSearch] = useState('')
+  const [stocks, setStocks] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [fundamentalData, setFundamentalData] = useState<any>(null)
-  const [aiAnalysis, setAiAnalysis] = useState('')
+  const [activeFilter, setActiveFilter] = useState('all')
 
-  async function handleSearch() {
-    if (!tickerSearch) return
-    
+  async function loadScreenerData(filterType: string) {
     setLoading(true)
+    setActiveFilter(filterType)
     
     try {
-      const response = await fetch('/api/screener/fundamental', {
+      const response = await fetch('/api/screener/multi-scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker: tickerSearch })
+        body: JSON.stringify({ filterType })
       })
 
       const data = await response.json()
-      setFundamentalData(data.fundamentalData)
-      
-      // Get AI analysis
-      const aiResponse = await fetch('/api/screener/analyze-fundamental', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ticker: tickerSearch,
-          data: data.fundamentalData 
-        })
-      })
-
-      const aiData = await aiResponse.json()
-      setAiAnalysis(aiData.analysis)
-
+      setStocks(data.stocks || [])
     } catch (error) {
-      alert('Errore nel caricamento')
+      console.error('Errore:', error)
+      alert('Errore caricamento screener')
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    loadScreenerData('all')
+  }, [])
+
+  // Top 5 picks
+  const top5 = stocks
+    .sort((a, b) => b.InvestmentScore - a.InvestmentScore)
+    .slice(0, 5)
+
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">🔍 Screener & Analisi AI</h1>
+      <h1 className="text-3xl font-bold mb-6">🔍 Screener Multi-Asset</h1>
 
+      {/* Filtri Predefiniti */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Cerca Ticker</CardTitle>
+          <CardTitle>Filtri Intelligenti</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Es: NASDAQ:AAPL"
-              value={tickerSearch}
-              onChange={(e) => setTickerSearch(e.target.value.toUpperCase())}
-              className="flex-1"
-            />
+          <div className="flex gap-2 flex-wrap">
             <Button 
-              onClick={handleSearch}
-              disabled={loading || !tickerSearch}
+              onClick={() => loadScreenerData('all')}
+              variant={activeFilter === 'all' ? 'default' : 'outline'}
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔍 Cerca'}
+              🌍 Tutti ({stocks.length})
+            </Button>
+            <Button 
+              onClick={() => loadScreenerData('top_score')}
+              variant={activeFilter === 'top_score' ? 'default' : 'outline'}
+            >
+              ⭐ Top Score
+            </Button>
+            <Button 
+              onClick={() => loadScreenerData('value')}
+              variant={activeFilter === 'value' ? 'default' : 'outline'}
+            >
+              💎 Value Investing
+            </Button>
+            <Button 
+              onClick={() => loadScreenerData('growth')}
+              variant={activeFilter === 'growth' ? 'default' : 'outline'}
+            >
+              🚀 Growth
+            </Button>
+            <Button 
+              onClick={() => loadScreenerData('dividend')}
+              variant={activeFilter === 'dividend' ? 'default' : 'outline'}
+            >
+              💰 Dividend
+            </Button>
+            <Button 
+              onClick={() => loadScreenerData('momentum')}
+              variant={activeFilter === 'momentum' ? 'default' : 'outline'}
+            >
+              📈 Momentum
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {fundamentalData && (
-        <Tabs defaultValue="dati">
+      {loading && (
+        <div className="text-center py-12">
+          <p className="text-xl">⏳ Scansione mercati in corso...</p>
+        </div>
+      )}
+
+      {!loading && (
+        <Tabs defaultValue="top5">
           <TabsList>
-            <TabsTrigger value="dati">Dati Fondamentali</TabsTrigger>
-            <TabsTrigger value="analisi">Analisi AI</TabsTrigger>
+            <TabsTrigger value="top5">🏆 Top 5 Picks</TabsTrigger>
+            <TabsTrigger value="all">📊 Tutti ({stocks.length})</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="dati">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dati Fondamentali - {tickerSearch}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {Object.entries(fundamentalData).map(([key, value]: [string, any]) => (
-                    <div key={key} className="border rounded p-3">
-                      <p className="text-xs text-gray-600 uppercase">{key}</p>
-                      <p className="font-semibold">
-                        {typeof value === 'number' ? value.toLocaleString('it-IT') : value || 'N/A'}
-                      </p>
+          {/* TOP 5 PICKS */}
+          <TabsContent value="top5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {top5.map((stock, idx) => (
+                <Card key={stock.name} className="bg-gradient-to-br from-blue-50 to-purple-50">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>{stock.name}</CardTitle>
+                        <p className="text-sm text-gray-600">{stock.market}</p>
+                      </div>
+                      <Badge className="text-2xl">#{idx + 1}</Badge>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-4">
+                      <p className="text-4xl font-bold text-green-600">
+                        {stock.InvestmentScore}/100
+                      </p>
+                      <p className="text-sm text-gray-600">Investment Score</p>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Prezzo:</span>
+                        <span className="font-semibold">${stock.close?.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>RSI:</span>
+                        <span className="font-semibold">{stock.RSI?.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Volatilità:</span>
+                        <span className="font-semibold">{stock['Volatility.D']?.toFixed(2)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Rating Tecnico:</span>
+                        <Badge variant={stock['Recommend.All'] > 0.3 ? 'default' : 'secondary'}>
+                          {stock.TechnicalRating}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-2 bg-white rounded border">
+                      <p className="text-xs font-semibold">💡 Motivi:</p>
+                      <p className="text-xs">{stock.RecommendationReason}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
 
-          <TabsContent value="analisi">
-            {aiAnalysis && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <CardTitle>🤖 Analisi AI (Groq)</CardTitle>
-                    <Badge>Llama 3.1</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="prose max-w-none">
-                    {aiAnalysis.split('\n').map((line, idx) => (
-                      <p key={idx} className="mb-3">{line}</p>
+          {/* TABELLA COMPLETA */}
+          <TabsContent value="all">
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rank</TableHead>
+                      <TableHead>Ticker</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead className="text-right">Prezzo</TableHead>
+                      <TableHead className="text-right">RSI</TableHead>
+                      <TableHead className="text-right">MACD</TableHead>
+                      <TableHead>Trend</TableHead>
+                      <TableHead className="text-right">Volatilità</TableHead>
+                      <TableHead>Rating</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stocks.map((stock, idx) => (
+                      <TableRow key={stock.name}>
+                        <TableCell className="font-bold">#{idx + 1}</TableCell>
+                        <TableCell className="font-semibold">{stock.name}</TableCell>
+                        <TableCell>
+                          <Badge variant={stock.InvestmentScore > 70 ? 'default' : 'secondary'}>
+                            {stock.InvestmentScore}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">${stock.close?.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{stock.RSI?.toFixed(1)}</TableCell>
+                        <TableCell className="text-right">{stock['MACD.macd']?.toFixed(3)}</TableCell>
+                        <TableCell>
+                          <Badge variant={stock.TrendScore > 7 ? 'default' : 'outline'}>
+                            {stock.TrendScore}/10
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{stock['Volatility.D']?.toFixed(2)}%</TableCell>
+                        <TableCell>
+                          <span className={`text-xs ${
+                            stock['Recommend.All'] > 0.3 ? 'text-green-600' : 
+                            stock['Recommend.All'] < -0.3 ? 'text-red-600' : 'text-gray-600'
+                          }`}>
+                            {stock.TechnicalRating}
+                          </span>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       )}
