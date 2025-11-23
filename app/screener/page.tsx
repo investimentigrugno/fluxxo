@@ -41,7 +41,7 @@ export default function ScreenerPage() {
 
 
   useEffect(() => {
-    loadScreenerData('all')
+    loadScreenerData()
   }, [])
 
   // Top 5 picks
