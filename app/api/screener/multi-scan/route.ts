@@ -46,18 +46,30 @@ export async function POST(request: NextRequest) {
         filtered = stocks.filter(s => s.InvestmentScore > 70)
         break
       case 'value':
-        filtered = stocks.filter(s => s.price_earnings_ttm < 20 && s.return_on_equity > 0.15)
+        filtered = stocks.filter(s => 
+          (s.price_earnings_ttm ?? 999) < 20 && 
+          (s.return_on_equity ?? 0) > 0.15
+        )
         break
       case 'growth':
-        filtered = stocks.filter(s => s.change > 2 && s.RSI < 70)
+        filtered = stocks.filter(s => 
+          (s.change ?? 0) > 2 && 
+          (s.RSI ?? 100) < 70
+        )
         break
       case 'dividend':
-        filtered = stocks.filter(s => s.dividend_yield_recent > 0.02)
+        filtered = stocks.filter(s => 
+          (s.dividend_yield_recent ?? 0) > 0.02
+        )
         break
       case 'momentum':
-        filtered = stocks.filter(s => s.RSI > 50 && s['Recommend.All'] > 0.3)
+        filtered = stocks.filter(s => 
+          (s.RSI ?? 0) > 50 && 
+          (s['Recommend.All'] ?? 0) > 0.3
+        )
         break
     }
+
 
     // Ordina per score
     filtered.sort((a, b) => b.InvestmentScore - a.InvestmentScore)
