@@ -184,7 +184,7 @@ def get_ticker_info():
         
         # fast_info è ottimizzato e non fa troppe chiamate
         price = ticker.fast_info.get('currentPrice') or ticker.fast_info.get('lastPrice')
-        currency = ticker.fast_info.get('currency', 'EUR')
+        currency = ticker.fast_info.get('currency')
         
         if price is None:
             return jsonify({'error': f'Prezzo non disponibile per {ticker_input}'}), 404
