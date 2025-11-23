@@ -531,7 +531,7 @@ export default function AnalisiPage() {
                             <span className="text-sm">{label}</span>
                             <div className="text-right">
                               <span className="font-bold text-sm">
-                                ${fundamentalData[key]?.toFixed(2) || 'N/A'}
+                                {fundamentalData[key]?.toFixed(2) || 'N/A'}
                               </span>
                               <Badge 
                                 variant={fundamentalData.close > (fundamentalData[key] || 0) ? 'default' : 'secondary'} 

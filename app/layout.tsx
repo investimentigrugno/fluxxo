@@ -1,12 +1,14 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: 'Flusso - Portfolio Management',
-  description: 'Sistema di gestione portfolio intelligente',
+  title: "Fluxxo - Financial Analysis Platform",
+  description: "Advanced stock screening and portfolio management",
 }
 
 export default function RootLayout({
@@ -17,24 +19,76 @@ export default function RootLayout({
   return (
     <html lang="it">
       <body className={inter.className}>
-        <nav className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-blue-600">📊 Flusso</h1>
-              <div className="flex gap-4">
-                <a href="/" className="hover:text-blue-600">Home</a>
-                <a href="/transazioni" className="hover:text-blue-600">Transazioni</a>
-                <a href="/proposte" className="hover:text-blue-600">Proposte</a>
-                <a href="/ordini" className="hover:text-blue-600">Ordini</a>
-                <a href="/screener" className="hover:text-blue-600">Screener</a>
-                <a href="/analisi" className="hover:text-blue-600">Analisi</a>
+        {/* Navigation Bar */}
+        <nav className="border-b bg-white sticky top-0 z-50 shadow-sm">
+          <div className="container mx-auto px-4">
+            <div className="flex h-16 items-center justify-between">
+              {/* Logo */}
+              <Link href="/" className="flex items-center space-x-2">
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">F</span>
+                </div>
+                <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Fluxxo
+                </span>
+              </Link>
+
+              {/* Navigation Links */}
+              <div className="hidden md:flex items-center space-x-1">
+                <Link href="/">
+                  <Button variant="ghost" className="font-medium">
+                    🏠 Home
+                  </Button>
+                </Link>
+                <Link href="/screener">
+                  <Button variant="ghost" className="font-medium">
+                    📊 Screener
+                  </Button>
+                </Link>
+                <Link href="/analisi">
+                  <Button variant="ghost" className="font-medium">
+                    🔍 Analisi
+                  </Button>
+                </Link>
+                <Link href="/proposte">
+                  <Button variant="ghost" className="font-medium">
+                    💡 Proposte
+                  </Button>
+                </Link>
+                <Link href="/ordini">
+                  <Button variant="ghost" className="font-medium">
+                    📋 Ordini
+                  </Button>
+                </Link>
+                <Link href="/transazioni">
+                  <Button variant="ghost" className="font-medium">
+                    💰 Portfolio
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Mobile Menu Button */}
+              <div className="md:hidden">
+                <Button variant="ghost" size="sm">
+                  ☰
+                </Button>
               </div>
             </div>
           </div>
         </nav>
-        <main className="min-h-screen bg-gray-50">
+
+        {/* Main Content */}
+        <main className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
           {children}
         </main>
+
+        {/* Footer */}
+        <footer className="border-t bg-white py-8">
+          <div className="container mx-auto px-4 text-center text-sm text-gray-600">
+            <p>© 2025 Fluxxo - Advanced Financial Analysis Platform</p>
+            <p className="mt-2">Powered by TradingView & Supabase</p>
+          </div>
+        </footer>
       </body>
     </html>
   )
