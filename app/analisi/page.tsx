@@ -334,19 +334,19 @@ export default function AnalisiPage() {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">FCF Growth (YoY):</span>
                       <Badge variant={fundamentalData.free_cash_flow_yoy_growth_fy > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.free_cash_flow_yoy_growth_fy?.toFixed(1)}%
+                        {fundamentalData.free_cash_flow_yoy_growth_fy?.toFixed(1)}%
                       </Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">FCF CAGR (5Y):</span>
                       <Badge variant={fundamentalData.free_cash_flow_cagr_5y > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.free_cash_flow_cagr_5y)?.toFixed(1)}%
+                        {fundamentalData.free_cash_flow_cagr_5y?.toFixed(1)}%
                       </Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Capex Growth (YoY):</span>
                       <Badge variant={fundamentalData.capital_expenditures_yoy_growth_ttm > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.capital_expenditures_yoy_growth_ttm)?.toFixed(1)}%
+                        {fundamentalData.capital_expenditures_yoy_growth_ttm?.toFixed(1)}%
                       </Badge>
                     </div>
                   </CardContent>
