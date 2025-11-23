@@ -177,24 +177,19 @@ def get_ticker_info():
         if not ticker_input:
             return jsonify({'error': 'Ticker richiesto'}), 400
         
-        # Pulisce il ticker se ha formato EXCHANGE:TICKER (es: NASDAQ:AAPL -> AAPL)
-        clean_ticker = ticker_input.split(':')[-1]
+        print(f"🔍 Fetching info for ticker: {ticker_input}")
         
-        print(f"🔍 Fetching info for ticker: {clean_ticker}")
+        # Usa yfinance direttamente
+        ticker = yf.Ticker(ticker_input)
         
-        # Usa yfinance con la sintassi corretta
-        ticker = yf.Ticker(clean_ticker)
-        
-        # Ottieni currency
+        # Ottieni currency e price
         currency = ticker.info.get('currency', 'EUR')
-        
-        # Ottieni prezzo corrente con fallback
         price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice') or ticker.info.get('previousClose')
         
         if price is None:
-            return jsonify({'error': f'Prezzo non disponibile per {clean_ticker}'}), 404
+            return jsonify({'error': f'Prezzo non disponibile per {ticker_input}'}), 404
         
-        name = ticker.info.get('longName', clean_ticker)
+        name = ticker.info.get('longName', ticker_input)
         
         print(f"✅ Price: {price} {currency}")
         
@@ -207,7 +202,6 @@ def get_ticker_info():
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
