@@ -5,79 +5,46 @@ export async function POST(request: NextRequest) {
   try {
     const { filterType } = await request.json()
 
-    // Genera 100 stock mock con scoring
-    const stocks = []
-    const tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX', 'AMD', 'INTC']
+    // Chiama Python API Vercel
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     
-    for (let i = 0; i < 100; i++) {
-      const ticker = tickers[i % tickers.length] + (i > 9 ? i : '')
-      
-      const stockData = {
-        name: ticker,
-        market: ['NASDAQ', 'NYSE'][Math.floor(Math.random() * 2)],
-        close: Math.random() * 500 + 50,
-        volume: Math.floor(Math.random() * 10000000),
-        market_cap_basic: Math.floor(Math.random() * 100e9) + 1e9,
-        RSI: Math.random() * 50 + 30,
-        'MACD.macd': (Math.random() - 0.5) * 2,
-        'MACD.signal': (Math.random() - 0.5) * 2,
-        SMA50: Math.random() * 500 + 50,
-        SMA200: Math.random() * 500 + 50,
-        'Volatility.D': Math.random() * 3,
-        'Recommend.All': (Math.random() - 0.3) * 1.5,
-        change: (Math.random() - 0.5) * 10,
-        price_earnings_ttm: Math.random() * 40 + 5,
-        return_on_equity: Math.random() * 0.4,
-        debt_to_equity: Math.random() * 2,
-        dividend_yield_recent: Math.random() * 0.05
-      }
+    const response = await fetch(`${baseUrl}/api/screener`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filterType })
+    })
 
-      const scored = calculateInvestmentScore(stockData)
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    
+    // Applica scoring algorithm ai dati reali
+    const scoredStocks = data.stocks.map((stock: any) => {
+      const scored = calculateInvestmentScore(stock)
       scored.TechnicalRating = formatTechnicalRating(scored['Recommend.All'])
-      
-      stocks.push(scored)
-    }
+      scored.market = stock.country || 'Unknown'
+      return scored
+    })
 
-    // Applica filtri
-    let filtered = stocks
+    // Ordina per Investment Score
+    scoredStocks.sort((a, b) => b.InvestmentScore - a.InvestmentScore)
 
-    switch (filterType) {
-      case 'top_score':
-        filtered = stocks.filter(s => s.InvestmentScore > 70)
-        break
-      case 'value':
-        filtered = stocks.filter(s => 
-          (s.price_earnings_ttm ?? 999) < 20 && 
-          (s.return_on_equity ?? 0) > 0.15
-        )
-        break
-      case 'growth':
-        filtered = stocks.filter(s => 
-          (s.change ?? 0) > 2 && 
-          (s.RSI ?? 100) < 70
-        )
-        break
-      case 'dividend':
-        filtered = stocks.filter(s => 
-          (s.dividend_yield_recent ?? 0) > 0.02
-        )
-        break
-      case 'momentum':
-        filtered = stocks.filter(s => 
-          (s.RSI ?? 0) > 50 && 
-          (s['Recommend.All'] ?? 0) > 0.3
-        )
-        break
-    }
-
-
-    // Ordina per score
-    filtered.sort((a, b) => b.InvestmentScore - a.InvestmentScore)
-
-    return NextResponse.json({ stocks: filtered })
+    return NextResponse.json({ 
+      stocks: scoredStocks,
+      count: scoredStocks.length,
+      source: 'TradingView Real Data'
+    })
 
   } catch (error: any) {
     console.error('Errore multi-scan:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    
+    // Fallback a dati mock se Python API fallisce
+    return NextResponse.json({ 
+      error: error.message,
+      stocks: [],
+      source: 'Error - Check Python API'
+    }, { status: 500 })
   }
 }
