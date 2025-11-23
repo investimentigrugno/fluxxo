@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2 } from 'lucide-react'
 
-'use client'
-
 export default function AnalisiPage() {
   
   // States
