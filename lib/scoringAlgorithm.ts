@@ -145,3 +145,49 @@ export function getTop5Picks(stocks: ScoredStock[]): ScoredStock[] {
     .sort((a, b) => b.InvestmentScore - a.InvestmentScore)
     .slice(0, 5)
 }
+
+export interface ScoredStock extends StockData {
+  InvestmentScore: number
+  RSIScore: number
+  MACDScore: number
+  TrendScore: number
+  TechRatingScore: number
+  VolatilityScore: number
+  MCapScore: number
+  RecommendationReason: string
+  TechnicalRating?: string  // ⭐ AGGIUNGI QUESTA RIGA
+}
+
+// lib/scoringAlgorithm.ts
+export interface StockData {
+  name: string
+  close: number
+  RSI?: number
+  'MACD.macd'?: number
+  'MACD.signal'?: number
+  SMA50?: number
+  SMA200?: number
+  'Volatility.D'?: number
+  'Recommend.All'?: number
+  market_cap_basic?: number
+  volume?: number
+  relative_volume_10d_calc?: number
+  change?: number
+  market?: string
+  price_earnings_ttm?: number
+  return_on_equity?: number
+  debt_to_equity?: number
+  dividend_yield_recent?: number
+}
+
+export interface ScoredStock extends StockData {
+  InvestmentScore: number
+  RSIScore: number
+  MACDScore: number
+  TrendScore: number
+  TechRatingScore: number
+  VolatilityScore: number
+  MCapScore: number
+  RecommendationReason: string
+  TechnicalRating?: string  // ⭐ AGGIUNTO
+}
