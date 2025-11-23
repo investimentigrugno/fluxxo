@@ -179,11 +179,18 @@ def get_ticker_info():
         
         print(f"🔍 Fetching info for ticker: {ticker_input}")
         
-        # Usa yfinance direttamente
-        ticker = yf.Ticker(ticker_input)
+        # Crea sessione con User-Agent personalizzato per evitare 429
+        import requests
+        session = requests.Session()
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        
+        # Usa yfinance con sessione custom
+        ticker = yf.Ticker(ticker_input, session=session)
         
         # Ottieni currency e price
-        currency = ticker.info.get('currency')
+        currency = ticker.info.get('currency', 'EUR')
         price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice') or ticker.info.get('previousClose')
         
         if price is None:
