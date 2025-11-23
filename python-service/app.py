@@ -83,7 +83,6 @@ def scan():
 
 @app.route('/api/fundamental', methods=['POST'])
 def get_fundamental():
-    """Analisi fondamentale singolo ticker"""
     try:
         data = request.get_json() or {}
         ticker = data.get('ticker', '')
@@ -93,66 +92,81 @@ def get_fundamental():
         
         print(f"🔍 Analyzing ticker: {ticker}")
         
-        markets = [
-            'america', 'australia', 'belgium', 'brazil', 'canada', 'chile', 'china', 'italy',
-            'czech', 'denmark', 'egypt', 'estonia', 'finland', 'france', 'germany', 'greece',
-            'hongkong', 'hungary', 'india', 'indonesia', 'ireland', 'israel', 'japan', 'korea',
-            'kuwait', 'lithuania', 'luxembourg', 'malaysia', 'mexico', 'morocco', 'netherlands',
-            'newzealand', 'norway', 'peru', 'philippines', 'poland', 'portugal', 'qatar', 'russia',
-            'singapore', 'slovakia', 'spain', 'sweden', 'switzerland', 'taiwan', 'uae', 'uk',
-            'venezuela', 'vietnam', 'crypto'
+        # TUTTI i mercati (completi)
+        all_markets = [
+            'america', 'australia', 'belgium', 'brazil', 'canada', 
+            'chile', 'china', 'italy', 'czech', 'denmark', 'egypt',
+            'estonia', 'finland', 'france', 'germany', 'greece',
+            'hongkong', 'hungary', 'india', 'indonesia', 'ireland',
+            'israel', 'japan', 'korea', 'kuwait', 'lithuania',
+            'luxembourg', 'malaysia', 'mexico', 'morocco',
+            'netherlands', 'newzealand', 'norway', 'peru',
+            'philippines', 'poland', 'portugal', 'qatar', 'russia',
+            'singapore', 'slovakia', 'spain', 'sweden', 'switzerland',
+            'taiwan', 'uae', 'uk', 'venezuela', 'vietnam', 'crypto'
         ]
         
-        columns = [
+        # TUTTE le colonne necessarie
+        all_columns = [
             'name', 'description', 'country', 'sector', 'close', 'currency',
-            'market_cap_basic', 'total_revenue_yoy_growth_fy', 'gross_profit_yoy_growth_fy',
-            'net_income_yoy_growth_fy', 'earnings_per_share_diluted_yoy_growth_fy',
-            'price_earnings_ttm', 'price_free_cash_flow_ttm', 'total_assets',
-            'total_debt', 'operating_margin', 'ebitda_yoy_growth_fy',
-            'net_margin_ttm', 'free_cash_flow_yoy_growth_fy', 'price_sales_ratio',
+            'market_cap_basic', 'total_revenue_yoy_growth_fy', 
+            'gross_profit_yoy_growth_fy', 'net_income_yoy_growth_fy',
+            'earnings_per_share_diluted_yoy_growth_fy', 'price_earnings_ttm',
+            'price_free_cash_flow_ttm', 'total_assets', 'total_debt',
+            'operating_margin', 'ebitda_yoy_growth_fy', 'net_margin_ttm',
+            'free_cash_flow_yoy_growth_fy', 'price_sales_ratio',
             'total_liabilities_fy', 'total_current_assets', 'capex_per_share_ttm',
-            'ebitda', 'ebit_ttm', 'net_income', 'effective_interest_rate_on_debt_fy',
-            'capital_expenditures_yoy_growth_ttm', 'enterprise_value_to_free_cash_flow_ttm',
+            'ebitda', 'ebit_ttm', 'net_income', 
+            'effective_interest_rate_on_debt_fy',
+            'capital_expenditures_yoy_growth_ttm', 
+            'enterprise_value_to_free_cash_flow_ttm',
             'free_cash_flow_cagr_5y', 'invent_turnover_current',
             'price_target_low', 'price_target_high', 'price_target_median',
             'revenue_forecast_fq', 'earnings_per_share_forecast_fq',
-            'SMA50', 'SMA200', 'beta_1_year', 'beta_2_year',
-            'RSI', 'MACD.macd', 'MACD.signal', 'Volatility.D', 'Recommend.All',
-            'volume', 'change', 'relative_volume_10d_calc',
-            'SMA10', 'SMA20', 'SMA100',
+            'SMA10', 'SMA20', 'SMA50', 'SMA100', 'SMA200',
             'EMA10', 'EMA20', 'EMA50', 'EMA100', 'EMA200',
             'BB.upper', 'BB.lower', 'BB.middle',
-            'ATR', 'Volatility.W', 'Volatility.M',
-            'ADX', 'ADX+DI', 'ADX-DI',
-            'Mom', 'ROC', 'W.R',
-            'Stoch.RSI.K', 'Stoch.RSI.D',
-            'CCI20',
-            'Recommend.Other', 'Recommend.MA'
+            'RSI', 'MACD.macd', 'MACD.signal', 
+            'Volatility.D', 'Volatility.W', 'Volatility.M',
+            'Recommend.All', 'Recommend.MA', 'Recommend.Other',
+            'volume', 'change', 'relative_volume_10d_calc',
+            'beta_1_year', 'beta_2_year',
+            'ATR', 'ADX', 'ADX+DI', 'ADX-DI',
+            'Mom', 'ROC', 'W.R', 'Stoch.RSI.K', 'Stoch.RSI.D', 'CCI20'
         ]
         
-        query = (Query()
-            .set_markets(*markets)
+        # Query TradingView per ticker specifico
+        result = (Query()
+            .set_markets(*all_markets)
             .set_tickers(ticker)
-            .select(*columns)
+            .select(*all_columns)
             .get_scanner_data()
         )
         
-        if query[1].empty:
-            return jsonify({'error': f'Nessun dato per {ticker}'}), 404
+        df = result[1]
         
-        row = query[1].iloc[0].to_dict()
+        if df.empty:
+            print(f"❌ No data found for {ticker}")
+            return jsonify({'error': f'Nessun dato trovato per {ticker}'}), 404
         
+        # Prima riga = il ticker richiesto
+        row = df.iloc[0].to_dict()
+        
+        # Pulisci NaN values
         for key, value in row.items():
             if pd.isna(value):
                 row[key] = None
         
-        print(f"✅ Data retrieved for {ticker}")
+        print(f"✅ Successfully retrieved data for {ticker}")
         
         return jsonify({'fundamentalData': row})
         
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"❌ Error in fundamental analysis: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
