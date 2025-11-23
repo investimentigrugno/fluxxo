@@ -1,226 +1,140 @@
-'use client'
-
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2 } from 'lucide-react'
-
-export default function AnalisiPage() {
-  const [tickerSearch, setTickerSearch] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [fundamentalData, setFundamentalData] = useState<any>(null)
-  const [aiAnalysis, setAiAnalysis] = useState('')
-
-  async function handleSearch() {
-    if (!tickerSearch) return
+{/* DATI FONDAMENTALI */}
+<TabsContent value="dati">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     
-    setLoading(true)
-    setFundamentalData(null)
-    setAiAnalysis('')
-    
-    try {
-      // Carica dati fondamentali
-      const response = await fetch('/api/screener/fundamental', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker: tickerSearch })
-      })
+    {/* Card Prezzi */}
+    <Card>
+      <CardHeader>
+        <CardTitle>💰 Valutazione</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex justify-between">
+          <span className="text-gray-600">Prezzo Attuale:</span>
+          <span className="font-bold text-xl">${fundamentalData.close?.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Market Cap:</span>
+          <span className="font-semibold">
+            ${(fundamentalData.market_cap_basic / 1e9)?.toFixed(2)}B
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">P/E Ratio:</span>
+          <span className="font-semibold">
+            {fundamentalData.price_earnings_ttm?.toFixed(2) || 'N/A'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Price/Sales:</span>
+          <span className="font-semibold">
+            {fundamentalData.price_sales_ratio?.toFixed(2) || 'N/A'}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
 
-      const data = await response.json()
-      setFundamentalData(data.fundamentalData)
-      
-      // Richiedi analisi AI
-      const aiResponse = await fetch('/api/screener/analyze-fundamental', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ticker: tickerSearch,
-          data: data.fundamentalData 
-        })
-      })
+    {/* Card Redditività */}
+    <Card>
+      <CardHeader>
+        <CardTitle>📈 Redditività</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex justify-between">
+          <span className="text-gray-600">Operating Margin:</span>
+          <span className="font-semibold">
+            {(fundamentalData.operating_margin * 100)?.toFixed(1)}%
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Net Margin:</span>
+          <span className="font-semibold">
+            {(fundamentalData.net_margin_ttm * 100)?.toFixed(1)}%
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">EBITDA:</span>
+          <span className="font-semibold">
+            ${(fundamentalData.ebitda / 1e9)?.toFixed(2)}B
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Net Income:</span>
+          <span className="font-semibold">
+            ${(fundamentalData.net_income / 1e9)?.toFixed(2)}B
+          </span>
+        </div>
+      </CardContent>
+    </Card>
 
-      const aiData = await aiResponse.json()
-      setAiAnalysis(aiData.analysis)
+    {/* Card Bilancio */}
+    <Card>
+      <CardHeader>
+        <CardTitle>🏛️ Bilancio</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex justify-between">
+          <span className="text-gray-600">Total Assets:</span>
+          <span className="font-semibold">
+            ${(fundamentalData.total_assets / 1e9)?.toFixed(2)}B
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Total Debt:</span>
+          <span className="font-semibold">
+            ${(fundamentalData.total_debt / 1e9)?.toFixed(2)}B
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Current Assets:</span>
+          <span className="font-semibold">
+            ${(fundamentalData.total_current_assets / 1e9)?.toFixed(2)}B
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Debt/Equity:</span>
+          <span className="font-semibold">
+            {((fundamentalData.total_debt / (fundamentalData.total_assets - fundamentalData.total_liabilities_fy)) || 0)?.toFixed(2)}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
 
-    } catch (error) {
-      alert('Errore nel caricamento')
-    } finally {
-      setLoading(false)
-    }
-  }
+    {/* Card Target Price */}
+    <Card>
+      <CardHeader>
+        <CardTitle>🎯 Target Analisti</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex justify-between">
+          <span className="text-gray-600">Target Alto:</span>
+          <span className="font-semibold text-green-600">
+            ${fundamentalData.price_target_high?.toFixed(2) || 'N/A'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Target Medio:</span>
+          <span className="font-semibold">
+            ${fundamentalData.price_target_median?.toFixed(2) || 'N/A'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Target Basso:</span>
+          <span className="font-semibold text-red-600">
+            ${fundamentalData.price_target_low?.toFixed(2) || 'N/A'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Upside Potenziale:</span>
+          <Badge variant={
+            ((fundamentalData.price_target_median - fundamentalData.close) / fundamentalData.close * 100) > 10 
+              ? 'default' 
+              : 'secondary'
+          }>
+            {((fundamentalData.price_target_median - fundamentalData.close) / fundamentalData.close * 100)?.toFixed(1)}%
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
 
-  return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">🔍 Analisi Singolo Titolo</h1>
-
-      {/* Barra Ricerca */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Cerca Ticker</CardTitle>
-          <p className="text-sm text-gray-600">
-            Inserisci il ticker nel formato: NASDAQ:AAPL, NYSE:TSLA, BINANCE:BTCUSDT
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Es: NASDAQ:AAPL"
-              value={tickerSearch}
-              onChange={(e) => setTickerSearch(e.target.value.toUpperCase())}
-              className="flex-1"
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <Button 
-              onClick={handleSearch}
-              disabled={loading || !tickerSearch}
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔍 Cerca'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {!fundamentalData && !loading && (
-        <Card>
-          <CardContent className="py-12 text-center text-gray-500">
-            Inserisci un ticker per iniziare l'analisi
-          </CardContent>
-        </Card>
-      )}
-
-      {loading && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Recupero dati da TradingView...</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {fundamentalData && (
-        <Tabs defaultValue="dati">
-          <TabsList>
-            <TabsTrigger value="dati">📊 Dati Fondamentali</TabsTrigger>
-            <TabsTrigger value="tecnici">📈 Indicatori Tecnici</TabsTrigger>
-            <TabsTrigger value="analisi">🤖 Analisi AI</TabsTrigger>
-          </TabsList>
-
-          {/* DATI FONDAMENTALI */}
-          <TabsContent value="dati">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dati Fondamentali - {tickerSearch}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  <div className="border rounded p-3">
-                    <p className="text-xs text-gray-600">Prezzo</p>
-                    <p className="text-lg font-bold">${fundamentalData.close?.toFixed(2)}</p>
-                  </div>
-                  <div className="border rounded p-3">
-                    <p className="text-xs text-gray-600">Market Cap</p>
-                    <p className="text-lg font-bold">
-                      {(fundamentalData.market_cap_basic / 1e9).toFixed(2)}B
-                    </p>
-                  </div>
-                  <div className="border rounded p-3">
-                    <p className="text-xs text-gray-600">P/E Ratio</p>
-                    <p className="text-lg font-bold">{fundamentalData.price_earnings_ttm}</p>
-                  </div>
-                  <div className="border rounded p-3">
-                    <p className="text-xs text-gray-600">ROE</p>
-                    <p className="text-lg font-bold">{(fundamentalData.return_on_equity * 100).toFixed(1)}%</p>
-                  </div>
-                  <div className="border rounded p-3">
-                    <p className="text-xs text-gray-600">Debt/Equity</p>
-                    <p className="text-lg font-bold">{fundamentalData.debt_to_equity}</p>
-                  </div>
-                  <div className="border rounded p-3">
-                    <p className="text-xs text-gray-600">Current Ratio</p>
-                    <p className="text-lg font-bold">{fundamentalData.current_ratio}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* INDICATORI TECNICI */}
-          <TabsContent value="tecnici">
-            <Card>
-              <CardHeader>
-                <CardTitle>Indicatori Tecnici</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="border rounded p-4">
-                    <p className="text-sm text-gray-600">RSI (14)</p>
-                    <p className="text-3xl font-bold">{fundamentalData.RSI?.toFixed(1)}</p>
-                    <Badge variant={
-                      fundamentalData.RSI > 70 ? 'destructive' :
-                      fundamentalData.RSI < 30 ? 'default' : 'secondary'
-                    }>
-                      {fundamentalData.RSI > 70 ? 'Ipercomprato' :
-                       fundamentalData.RSI < 30 ? 'Ipervenduto' : 'Neutrale'}
-                    </Badge>
-                  </div>
-
-                  <div className="border rounded p-4">
-                    <p className="text-sm text-gray-600">MACD</p>
-                    <p className="text-2xl font-bold">{fundamentalData['MACD.macd']?.toFixed(4)}</p>
-                    <p className="text-xs text-gray-600">
-                      Signal: {fundamentalData['MACD.signal']?.toFixed(4)}
-                    </p>
-                  </div>
-
-                  <div className="border rounded p-4">
-                    <p className="text-sm text-gray-600">SMA 50</p>
-                    <p className="text-2xl font-bold">${fundamentalData.SMA50?.toFixed(2)}</p>
-                  </div>
-
-                  <div className="border rounded p-4">
-                    <p className="text-sm text-gray-600">SMA 200</p>
-                    <p className="text-2xl font-bold">${fundamentalData.SMA200?.toFixed(2)}</p>
-                  </div>
-
-                  <div className="border rounded p-4">
-                    <p className="text-sm text-gray-600">Volatilità</p>
-                    <p className="text-2xl font-bold">{fundamentalData['Volatility.D']?.toFixed(2)}%</p>
-                  </div>
-
-                  <div className="border rounded p-4">
-                    <p className="text-sm text-gray-600">Rating Tecnico</p>
-                    <Badge className="text-lg">
-                      {fundamentalData.TechnicalRating}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ANALISI AI */}
-          <TabsContent value="analisi">
-            {aiAnalysis && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <CardTitle>🤖 Analisi AI (Groq)</CardTitle>
-                    <Badge>Llama 3.1</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="prose max-w-none whitespace-pre-line">
-                    {aiAnalysis}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
-      )}
-    </div>
-  )
-}
+  </div>
+</TabsContent>
