@@ -177,13 +177,13 @@ export default function AnalisiPage() {
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-sm text-gray-600">Operating Margin</span>
                       <span className="font-semibold">
-                        {(fundamentalData.operating_margin * 100)?.toFixed(1)}%
+                        {fundamentalData.operating_margin?.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-sm text-gray-600">Net Margin (TTM)</span>
                       <span className="font-semibold">
-                        {(fundamentalData.net_margin_ttm * 100)?.toFixed(1)}%
+                        {(fundamentalData.net_margin_ttm)?.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between border-b pb-2">
@@ -240,7 +240,7 @@ export default function AnalisiPage() {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Interest Rate Debt</span>
                       <span className="font-semibold">
-                        {(fundamentalData.effective_interest_rate_on_debt_fy * 100)?.toFixed(2)}%
+                        {(fundamentalData.effective_interest_rate_on_debt_fy)?.toFixed(2)}%
                       </span>
                     </div>
                   </CardContent>
@@ -258,31 +258,31 @@ export default function AnalisiPage() {
                     <div className="text-center p-3 bg-blue-50 rounded">
                       <p className="text-xs text-gray-600 mb-1">Revenue Growth</p>
                       <Badge variant={fundamentalData.total_revenue_yoy_growth_fy > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.total_revenue_yoy_growth_fy * 100)?.toFixed(1)}%
+                        {(fundamentalData.total_revenue_yoy_growth_fy)?.toFixed(1)}%
                       </Badge>
                     </div>
                     <div className="text-center p-3 bg-green-50 rounded">
                       <p className="text-xs text-gray-600 mb-1">Gross Profit Growth</p>
                       <Badge variant={fundamentalData.gross_profit_yoy_growth_fy > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.gross_profit_yoy_growth_fy * 100)?.toFixed(1)}%
+                        {(fundamentalData.gross_profit_yoy_growth_fy)?.toFixed(1)}%
                       </Badge>
                     </div>
                     <div className="text-center p-3 bg-purple-50 rounded">
                       <p className="text-xs text-gray-600 mb-1">Net Income Growth</p>
                       <Badge variant={fundamentalData.net_income_yoy_growth_fy > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.net_income_yoy_growth_fy * 100)?.toFixed(1)}%
+                        {(fundamentalData.net_income_yoy_growth_fy)?.toFixed(1)}%
                       </Badge>
                     </div>
                     <div className="text-center p-3 bg-yellow-50 rounded">
                       <p className="text-xs text-gray-600 mb-1">EPS Growth</p>
                       <Badge variant={fundamentalData.earnings_per_share_diluted_yoy_growth_fy > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.earnings_per_share_diluted_yoy_growth_fy * 100)?.toFixed(1)}%
+                        {(fundamentalData.earnings_per_share_diluted_yoy_growth_fy)?.toFixed(1)}%
                       </Badge>
                     </div>
                     <div className="text-center p-3 bg-pink-50 rounded">
                       <p className="text-xs text-gray-600 mb-1">EBITDA Growth</p>
                       <Badge variant={fundamentalData.ebitda_yoy_growth_fy > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.ebitda_yoy_growth_fy * 100)?.toFixed(1)}%
+                        {(fundamentalData.ebitda_yoy_growth_fy)?.toFixed(1)}%
                       </Badge>
                     </div>
                   </div>
@@ -334,19 +334,19 @@ export default function AnalisiPage() {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">FCF Growth (YoY):</span>
                       <Badge variant={fundamentalData.free_cash_flow_yoy_growth_fy > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.free_cash_flow_yoy_growth_fy * 100)?.toFixed(1)}%
+                        {(fundamentalData.free_cash_flow_yoy_growth_fy?.toFixed(1)}%
                       </Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">FCF CAGR (5Y):</span>
                       <Badge variant={fundamentalData.free_cash_flow_cagr_5y > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.free_cash_flow_cagr_5y * 100)?.toFixed(1)}%
+                        {(fundamentalData.free_cash_flow_cagr_5y)?.toFixed(1)}%
                       </Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Capex Growth (YoY):</span>
                       <Badge variant={fundamentalData.capital_expenditures_yoy_growth_ttm > 0 ? 'default' : 'destructive'}>
-                        {(fundamentalData.capital_expenditures_yoy_growth_ttm * 100)?.toFixed(1)}%
+                        {(fundamentalData.capital_expenditures_yoy_growth_ttm)?.toFixed(1)}%
                       </Badge>
                     </div>
                   </CardContent>
