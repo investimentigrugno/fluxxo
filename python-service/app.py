@@ -183,7 +183,7 @@ def get_ticker_info():
         ticker = yf.Ticker(ticker_input)
         
         # Ottieni currency e price
-        currency = ticker.info.get('currency', 'EUR')
+        currency = ticker.info.get('currency')
         price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice') or ticker.info.get('previousClose')
         
         if price is None:
