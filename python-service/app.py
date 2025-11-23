@@ -106,6 +106,14 @@ def get_fundamental():
             'SMA50', 'SMA200', 'beta_1_year', 'beta_2_year',
             'RSI', 'MACD.macd', 'MACD.signal', 'Volatility.D', 'Recommend.All',
             'volume', 'change', 'relative_volume_10d_calc'
+            'SMA10', 'SMA20', 'SMA100',
+            'EMA10', 'EMA20', 'EMA50', 'EMA100', 'EMA200',
+            'BB.upper', 'BB.lower', 'BB.middle',
+            'ATR', 'Volatility.W', 'Volatility.M',
+            'ADX', 'ADX+DI', 'ADX-DI',
+            'Mom', 'ROC', 'W.R',
+            'Stoch.RSI.K', 'Stoch.RSI.D',
+            'CCI20', 'Recommend.Other', 'Recommend.MA'
         ]
         
         # Query TradingView per ticker specifico
