@@ -108,7 +108,7 @@ export default function AnalisiPage() {
                   </p>
                 </div>
                 <Badge className="text-xl px-4 py-2">
-                  ${fundamentalData.close?.toFixed(2)} {fundamentalData.currency}
+                  {fundamentalData.close?.toFixed(2)} {fundamentalData.currency}
                 </Badge>
               </div>
             </CardHeader>
@@ -138,7 +138,7 @@ export default function AnalisiPage() {
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-sm text-gray-600">Market Cap</span>
                       <span className="font-semibold">
-                        ${(fundamentalData.market_cap_basic / 1e9)?.toFixed(2)}B
+                        {(fundamentalData.market_cap_basic / 1e9)?.toFixed(2)}B {fundamentalData.currency}
                       </span>
                     </div>
                     <div className="flex justify-between border-b pb-2">
@@ -189,19 +189,19 @@ export default function AnalisiPage() {
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-sm text-gray-600">EBITDA</span>
                       <span className="font-semibold">
-                        ${(fundamentalData.ebitda / 1e9)?.toFixed(2)}B
+                        {(fundamentalData.ebitda / 1e9)?.toFixed(2)}B {fundamentalData.currency}
                       </span>
                     </div>
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-sm text-gray-600">EBIT (TTM)</span>
                       <span className="font-semibold">
-                        ${(fundamentalData.ebit_ttm / 1e9)?.toFixed(2)}B
+                        {(fundamentalData.ebit_ttm / 1e9)?.toFixed(2)}B {fundamentalData.currency}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Net Income</span>
                       <span className="font-semibold">
-                        ${(fundamentalData.net_income / 1e9)?.toFixed(2)}B
+                        {(fundamentalData.net_income / 1e9)?.toFixed(2)}B {fundamentalData.currency}
                       </span>
                     </div>
                   </CardContent>
@@ -216,25 +216,25 @@ export default function AnalisiPage() {
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-sm text-gray-600">Total Assets</span>
                       <span className="font-semibold">
-                        ${(fundamentalData.total_assets / 1e9)?.toFixed(2)}B
+                        {(fundamentalData.total_assets / 1e9)?.toFixed(2)}B {fundamentalData.currency}
                       </span>
                     </div>
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-sm text-gray-600">Total Debt</span>
                       <span className="font-semibold">
-                        ${(fundamentalData.total_debt / 1e9)?.toFixed(2)}B
+                        {(fundamentalData.total_debt / 1e9)?.toFixed(2)}B {fundamentalData.currency}
                       </span>
                     </div>
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-sm text-gray-600">Total Liabilities</span>
                       <span className="font-semibold">
-                        ${(fundamentalData.total_liabilities_fy / 1e9)?.toFixed(2)}B
+                        {(fundamentalData.total_liabilities_fy / 1e9)?.toFixed(2)}B {fundamentalData.currency}
                       </span>
                     </div>
                     <div className="flex justify-between border-b pb-2">
                       <span className="text-sm text-gray-600">Current Assets</span>
                       <span className="font-semibold">
-                        ${(fundamentalData.total_current_assets / 1e9)?.toFixed(2)}B
+                        {(fundamentalData.total_current_assets / 1e9)?.toFixed(2)}B {fundamentalData.currency}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -301,19 +301,19 @@ export default function AnalisiPage() {
                       <div className="text-center p-4 bg-green-50 rounded">
                         <p className="text-sm text-gray-600">Alto</p>
                         <p className="text-2xl font-bold text-green-600">
-                          ${fundamentalData.price_target_high?.toFixed(2) || 'N/A'}
+                          {fundamentalData.price_target_high?.toFixed(2) || 'N/A'} {fundamentalData.currency}
                         </p>
                       </div>
                       <div className="text-center p-4 bg-blue-50 rounded">
                         <p className="text-sm text-gray-600">Medio</p>
                         <p className="text-2xl font-bold text-blue-600">
-                          ${fundamentalData.price_target_median?.toFixed(2) || 'N/A'}
+                          {fundamentalData.price_target_median?.toFixed(2) || 'N/A'} {fundamentalData.currency}
                         </p>
                       </div>
                       <div className="text-center p-4 bg-red-50 rounded">
                         <p className="text-sm text-gray-600">Basso</p>
                         <p className="text-2xl font-bold text-red-600">
-                          ${fundamentalData.price_target_low?.toFixed(2) || 'N/A'}
+                          {fundamentalData.price_target_low?.toFixed(2) || 'N/A'} {fundamentalData.currency}
                         </p>
                       </div>
                     </div>
