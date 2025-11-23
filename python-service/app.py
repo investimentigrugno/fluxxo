@@ -179,31 +179,21 @@ def get_ticker_info():
         
         print(f"🔍 Fetching info for ticker: {ticker_input}")
         
-        # Crea sessione con User-Agent personalizzato per evitare 429
-        import requests
-        session = requests.Session()
-        session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
+        # Usa yfinance con fast_info (molto più veloce!)
+        ticker = yf.Ticker(ticker_input)
         
-        # Usa yfinance con sessione custom
-        ticker = yf.Ticker(ticker_input, session=session)
-        
-        # Ottieni currency e price
-        currency = ticker.info.get('currency', 'EUR')
-        price = ticker.info.get('currentPrice') or ticker.info.get('regularMarketPrice') or ticker.info.get('previousClose')
+        # fast_info è ottimizzato e non fa troppe chiamate
+        price = ticker.fast_info.get('currentPrice') or ticker.fast_info.get('lastPrice')
+        currency = ticker.fast_info.get('currency', 'EUR')
         
         if price is None:
             return jsonify({'error': f'Prezzo non disponibile per {ticker_input}'}), 404
-        
-        name = ticker.info.get('longName', ticker_input)
         
         print(f"✅ Price: {price} {currency}")
         
         return jsonify({
             'price': float(price),
-            'currency': currency.upper(),
-            'name': name
+            'currency': currency.upper()
         })
         
     except Exception as e:
