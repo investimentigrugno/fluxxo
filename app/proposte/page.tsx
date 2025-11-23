@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react'
 export default function PropostePage() {
   const [proposals, setProposals] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     asset: '',
     type: 'BUY',
@@ -26,42 +27,117 @@ export default function PropostePage() {
     motivation: ''
   })
 
-  useEffect(() => {
-    loadProposals()
-  }, [])
+  // Simulazione: funzione per ottenere valore totale portfolio in EUR - sostituisci con valore reale
+  async function getPortfolioValueEUR(): Promise<number> {
+    return 100000.0
+  }
 
+  // Fetch informazione ticker da backend Python/yfinance
+  async function fetchTickerInfo(ticker: string) {
+    if (!ticker) return
+
+    try {
+      const res = await fetch('/api/ticker/info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker })
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+
+      setFormData(prev => ({
+        ...prev,
+        entry_price: data.price.toFixed(2),
+        currency: data.currency
+      }))
+      // Ritorna la valuta per calcolo successivo
+      return data.currency
+    } catch (error: any) {
+      alert('Errore recupero info ticker: ' + error.message)
+      return null
+    }
+  }
+
+  // Ottieni tasso cambio da Frankfurter API
+  async function getExchangeRate(fromCurrency: string, toCurrency = 'EUR') {
+    if (fromCurrency === toCurrency) return 1.0
+    try {
+      const res = await fetch(`https://api.frankfurter.app/latest?from=${fromCurrency}&to=${toCurrency}`)
+      const data = await res.json()
+      return data.rates[toCurrency] ?? 1.0
+    } catch (error) {
+      console.error('Frankfurter error:', error)
+      return 1.0
+    }
+  }
+
+  // Calcola percentuale liquidità in EUR
+  async function calculatePercentLiquidity(entryPrice: number, quantity: number, currency: string) {
+    const portfolioEURValue = await getPortfolioValueEUR()
+    const rate = await getExchangeRate(currency, 'EUR')
+    const totalValueEUR = entryPrice * quantity * rate
+    return (totalValueEUR / portfolioEURValue) * 100
+  }
+
+  // Quando cambia ticker, fetch info e calcola percentuale liquidity
+  async function handleTickerChange(ticker: string) {
+    if (!ticker) return
+
+    const currency = await fetchTickerInfo(ticker)
+    if (!currency) return
+
+    const ep = parseFloat(formData.entry_price)
+    const qty = parseInt(formData.quantity)
+
+    if (isNaN(ep) || isNaN(qty)) {
+      setFormData(prev => ({ ...prev, percent_liquidity: '' }))
+      return
+    }
+
+    const percent = await calculatePercentLiquidity(ep, qty, currency)
+    setFormData(prev => ({ ...prev, percent_liquidity: percent.toFixed(2) }))
+  }
+
+  // Ricarica proposte dal DB
   async function loadProposals() {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('proposals')
-      .select('*')
-      .order('created_at', { ascending: false })
-
+    const { data, error } = await supabase.from('proposals').select('*').order('created_at', { ascending: false })
     if (error) {
       alert('Errore nel caricamento delle proposte')
       console.error(error)
       setLoading(false)
       return
     }
-
     setProposals(data || [])
     setLoading(false)
   }
 
+  useEffect(() => {
+    loadProposals()
+  }, [])
 
+  // Submit nuova proposta
   async function handleSubmitProposal(e: React.FormEvent) {
     e.preventDefault()
+    if (submitting) return
 
-    const now = new Date()
-    const { data: userData, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !userData.user) {
-      alert('Errore autenticazione utente')
+    // Validazione base
+    if (!formData.asset || !formData.entry_price || !formData.quantity) {
+      alert('Compila tutti i campi obbligatori')
       return
     }
 
-    const proposalData = {
-      created_at: now.toISOString(),
+    setSubmitting(true)
+
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+    if (userError || !userData.user) {
+      alert('Utente non autenticato')
+      setSubmitting(false)
+      return
+    }
+
+    const newProposal = {
+      created_at: new Date().toISOString(),
       asset: formData.asset,
       type: formData.type,
       entry_price: parseFloat(formData.entry_price),
@@ -70,20 +146,17 @@ export default function PropostePage() {
       take_profit: formData.take_profit ? parseFloat(formData.take_profit) : null,
       stop_loss: formData.stop_loss ? parseFloat(formData.stop_loss) : null,
       currency: formData.currency,
-      target_date: formData.target_date ? formData.target_date : null,
+      target_date: formData.target_date || null,
       motivation: formData.motivation || null,
       status: 'pending',
       user_id: userData.user.id
     }
 
-    const { error } = await supabase
-      .from('proposals')
-      .insert([proposalData])
-
+    const { error } = await supabase.from('proposals').insert([newProposal])
     if (error) {
-      alert('Errore: ' + error.message)
+      alert('Errore inserimento proposta: ' + error.message)
     } else {
-      alert('✅ Proposta creata!')
+      alert('✅ Proposta creata con successo')
       setFormData({
         asset: '',
         type: 'BUY',
@@ -98,8 +171,9 @@ export default function PropostePage() {
       })
       loadProposals()
     }
-  }
 
+    setSubmitting(false)
+  }
 
   return (
     <div className="container mx-auto p-6">
@@ -145,8 +219,8 @@ export default function PropostePage() {
                           <p className="font-semibold">{prop.quantity}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Votes in Favor</p>
-                          <p className="font-semibold">{prop.votes_approve ?? 0}/3</p>
+                          <p className="text-sm text-gray-600">Percent Liquidity</p>
+                          <p className="font-semibold">{prop.percent_liquidity?.toFixed(2) ?? 'N/A'}%</p>
                         </div>
                       </div>
                     </div>
@@ -169,7 +243,8 @@ export default function PropostePage() {
                   <Input
                     value={formData.asset}
                     onChange={(e) => setFormData({ ...formData, asset: e.target.value })}
-                    placeholder="E.g.: AAPL"
+                    onBlur={() => handleTickerChange(formData.asset)}
+                    placeholder="E.g.: NASDAQ:AAPL"
                     required
                   />
                 </div>
@@ -215,7 +290,8 @@ export default function PropostePage() {
                     type="number"
                     step="0.01"
                     value={formData.percent_liquidity}
-                    onChange={(e) => setFormData({ ...formData, percent_liquidity: e.target.value })}
+                    readOnly
+                    placeholder="Auto-calculated"
                   />
                 </div>
 
@@ -245,7 +321,6 @@ export default function PropostePage() {
                   <Input
                     value={formData.currency}
                     onChange={(e) => setFormData({ ...formData, currency: e.target.value.toUpperCase() })}
-                    placeholder="USD"
                     maxLength={5}
                   />
                 </div>
@@ -270,8 +345,8 @@ export default function PropostePage() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                  Submit Proposal
+                <Button type="submit" disabled={submitting} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                  {submitting ? 'Submitting...' : 'Submit Proposal'}
                 </Button>
               </form>
             </CardContent>

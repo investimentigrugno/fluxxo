@@ -169,42 +169,29 @@ def get_fundamental():
 
 @app.route('/api/ticker/info', methods=['POST'])
 def get_ticker_info():
-    """
-    Fetch prezzo e valuta da yfinance
-    """
     try:
         import yfinance as yf
-        
         data = request.get_json() or {}
         ticker = data.get('ticker', '')
         
         if not ticker:
             return jsonify({'error': 'Ticker richiesto'}), 400
         
-        # Pulisci ticker (rimuovi exchange se presente)
         clean_ticker = ticker.split(':')[-1]
-        
-        print(f"🔍 Fetching info for: {clean_ticker}")
-        
-        # Scarica dati da yfinance
         stock = yf.Ticker(clean_ticker)
         info = stock.info
         
-        # Estrai prezzo e valuta
         price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose', 0)
-        currency = info.get('currency', 'USD')
-        
-        print(f"✅ Price: {price} {currency}")
+        currency = info.get('currency', 'EUR').upper()
         
         return jsonify({
             'price': float(price),
-            'currency': currency.upper(),
+            'currency': currency,
             'name': info.get('longName', clean_ticker)
         })
-        
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 
 if __name__ == '__main__':
