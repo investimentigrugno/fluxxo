@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from tradingview_screener import Query, Column
+import yfinance as yf
 import pandas as pd
 import os
 
@@ -170,27 +171,38 @@ def get_fundamental():
 @app.route('/api/ticker/info', methods=['POST'])
 def get_ticker_info():
     try:
-        import yfinance as yf
         data = request.get_json() or {}
         ticker = data.get('ticker', '')
         
         if not ticker:
             return jsonify({'error': 'Ticker richiesto'}), 400
         
+        # Pulisce il ticker in caso sia in formato EXCHANGE:TICKER
         clean_ticker = ticker.split(':')[-1]
+        
         stock = yf.Ticker(clean_ticker)
+        
+        # Recupera informazioni
         info = stock.info
         
-        price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose', 0)
+        # Raccogli prezzo corrente, con fallback
+        price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose', None)
+        if price is None:
+            return jsonify({'error': 'Prezzo non disponibile per ' + clean_ticker}), 404
+        
         currency = info.get('currency', 'EUR').upper()
         
+        # Risposta JSON
         return jsonify({
             'price': float(price),
             'currency': currency,
             'name': info.get('longName', clean_ticker)
         })
+
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Errore get_ticker_info: {str(e)}")
+        return jsonify({'error': 'Errore interno server: ' + str(e)}), 500
+
 
 
 
