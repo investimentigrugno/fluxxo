@@ -285,7 +285,7 @@ export default function ScreenerPage() {
                             {/* Industry */}
                             <TableCell>
                               <p className="text-sm text-gray-600">
-                                {stock.industry || 'N/A'}
+                                {stock.sector || 'N/A'}
                               </p>
                             </TableCell>
 
@@ -305,20 +305,6 @@ export default function ScreenerPage() {
                               >
                                 {stock.InvestmentScore}
                               </Badge>
-                            </TableCell>
-
-                            {/* Trend Score */}
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Badge variant={stock.TrendScore > 7 ? 'default' : 'outline'}>
-                                  {stock.TrendScore}/10
-                                </Badge>
-                                {stock.TrendScore > 7 ? (
-                                  <TrendingUp className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <TrendingDown className="h-4 w-4 text-gray-400" />
-                                )}
-                              </div>
                             </TableCell>
 
                             {/* Grafico Button */}
