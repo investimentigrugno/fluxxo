@@ -181,8 +181,8 @@ def get_ticker_info():
         
         ticker = yf.Ticker(ticker_input)
 
-        name = ticker.info.get['shortName'] or ticker.info.get['longName'] or 'N/A'
-        sector = ticker.info.get['sector'] or ticker.info.get['industry'] or 'N/A'
+        name = ticker.info['shortName'] or ticker.info['longName'] or 'N/A'
+        sector = ticker.info['sector'] or ticker.info['industry'] or 'N/A'
         price = ticker.info['regularMarketPrice']
         currency = ticker.info['currency']
         
