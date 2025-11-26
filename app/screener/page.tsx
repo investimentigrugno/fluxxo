@@ -72,7 +72,7 @@ export default function ScreenerPage() {
               <div className="flex gap-6">
                 <div className="text-center">
                   <p className="text-3xl font-bold text-blue-600">{stocks.length}</p>
-                  <p className="text-sm text-gray-600">Titoli Totali</p>
+                  <p className="text-sm text-gray-600">All assets</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-green-600">
@@ -174,42 +174,36 @@ export default function ScreenerPage() {
                         <p className="text-3xl font-bold text-gray-800">
                           {stock.close?.toFixed(2)} {stock.currency}
                         </p>
-                        <p className="text-xs text-gray-600">Price</p>
                       </div>
 
                       {/* Metriche */}
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between items-center border-b pb-1">
-                          <span className="text-gray-600">RSI:</span>
-                          <Badge variant={
-                            stock.RSI > 70 ? 'destructive' :
-                            stock.RSI < 30 ? 'default' : 'secondary'
-                          }>
-                            {stock.RSI?.toFixed(1)}
+                          <span className="text-gray-600">RSI Score</span>
+                          <Badge variant={stock.RSIScore >= 8 ? 'default' : 'secondary'}>
+                            {stock.RSIScore}/20
                           </Badge>
                         </div>
                         
                         <div className="flex justify-between items-center border-b pb-1">
-                          <span className="text-gray-600">MACD:</span>
-                          <span className={`font-semibold ${
-                            stock['MACD.macd'] > 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {stock['MACD.macd']?.toFixed(3)}
-                          </span>
+                          <span className="text-gray-600">MACD Score</span>
+                          <Badge variant={stock.MACDScore >= 7 ? 'default' : 'secondary'}>
+                            {stock.MACDScore}/15
+                          </Badge>
                         </div>
 
                         <div className="flex justify-between items-center border-b pb-1">
                           <span className="text-gray-600">Trend Score:</span>
-                          <Badge variant={stock.TrendScore > 7 ? 'default' : 'secondary'}>
+                          <Badge variant={stock.TrendScore >= 8 ? 'default' : 'secondary'}>
                             {stock.TrendScore}/10
                           </Badge>
                         </div>
 
                         <div className="flex justify-between items-center border-b pb-1">
-                          <span className="text-gray-600">Daily Vol.:</span>
-                          <span className="font-semibold text-gray-800">
-                            {stock['Volatility.D']?.toFixed(2)}%
-                          </span>
+                          <span className="text-gray-600">Volatility Score</span>
+                          <Badge variant={stock.VolatilityScore >= 8 ? 'default' : 'secondary'}>
+                            {stock.VolatilityScore}/10
+                          </Badge>
                         </div>
 
                         <div className="flex justify-between items-center">

@@ -20,26 +20,26 @@ export async function POST(request: NextRequest) {
     const debtEquity = parseFloat(data.debt_to_equity) || 0
     const currentRatio = parseFloat(data.current_ratio) || 0
 
-    let valutazione = 'NEUTRA'
+    let valutazione = 'NEUTRAL'
     let rating = '⭐⭐⭐'
     
     if (pe < 15 && roe > 0.15) {
-      valutazione = 'SOTTOVALUTATA'
+      valutazione = 'UNDERVALUED'
       rating = '⭐⭐⭐⭐⭐'
     } else if (pe > 30 || roe < 0.1) {
-      valutazione = 'SOPRAVVALUTATA'
+      valutazione = 'OVERVALUED'
       rating = '⭐⭐'
     }
 
-    const analysis = `📊 **Analisi Fondamentale ${ticker}**
+    const analysis = `📊 **Fundamental Analysis ${ticker}**
 
 **Rating:** ${rating} ${valutazione}
 
-**Valutazione:**
-- P/E Ratio: ${pe.toFixed(1)}x ${pe < 20 ? '✅ Ragionevole' : '⚠️ Elevato'}
-- ROE: ${(roe * 100).toFixed(1)}% ${roe > 0.15 ? '✅ Ottimo' : '⚠️ Basso'}
-- Debt/Equity: ${debtEquity.toFixed(2)} ${debtEquity < 1 ? '✅ Solido' : '⚠️ Alto'}
-- Current Ratio: ${currentRatio.toFixed(2)} ${currentRatio > 1.5 ? '✅ Liquido' : '⚠️ Attenzione'}
+**Evaluation:**
+- P/E Ratio: ${pe.toFixed(1)}x ${pe < 20 ? '✅ Reasonable' : '⚠️ High'}
+- ROE: ${(roe * 100).toFixed(1)}% ${roe > 0.15 ? '✅ Good' : '⚠️ Low'}
+- Debt/Equity: ${debtEquity.toFixed(2)} ${debtEquity < 1 ? '✅ Solid' : '⚠️ High'}
+- Current Ratio: ${currentRatio.toFixed(2)} ${currentRatio > 1.5 ? '✅ Liquid' : '⚠️ Attention'}
 
 **Punti di Forza:**
 ${roe > 0.15 ? '• Alta redditività sul capitale proprio' : ''}
@@ -51,11 +51,11 @@ ${pe > 30 ? '• Valutazione elevata rispetto agli utili' : ''}
 ${currentRatio < 1.2 ? '• Liquidità potenzialmente sotto pressione' : ''}
 ${debtEquity > 1.5 ? '• Livello di indebitamento significativo' : ''}
 
-**Raccomandazione:** ${valutazione === 'SOTTOVALUTATA' ? '🟢 BUY' : valutazione === 'SOPRAVVALUTATA' ? '🔴 HOLD/SELL' : '🟡 HOLD'}
+**Raccomandazione:** ${valutazione === 'UNDERVALUED' ? '🟢 BUY' : valutazione === 'OVERVALUED' ? '🔴 HOLD/SELL' : '🟡 HOLD'}
 
-${valutazione === 'SOTTOVALUTATA' ? 'Fondamentali solidi e valutazione attraente per accumulo graduale.' : ''}
-${valutazione === 'SOPRAVVALUTATA' ? 'Valutazione elevata, attendere migliori opportunità d\'ingresso.' : ''}
-${valutazione === 'NEUTRA' ? 'Fondamentali nella media, monitorare per conferme operative.' : ''}
+${valutazione === 'UNDERVALUED' ? 'Fondamentali solidi e valutazione attraente per accumulo graduale.' : ''}
+${valutazione === 'OVERVALUED' ? 'Valutazione elevata, attendere migliori opportunità d\'ingresso.' : ''}
+${valutazione === 'NEUTRAL' ? 'Fondamentali nella media, monitorare per conferme operative.' : ''}
 
 ---
 *Analisi generata automaticamente - Non costituisce consulenza finanziaria*`

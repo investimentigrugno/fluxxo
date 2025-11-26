@@ -55,7 +55,7 @@ def scan():
                 Column('float_shares_percent_current') > 0.3
             )
             .order_by('market_cap_basic', ascending=False)
-            .limit(200)
+            .limit(100)
             .get_scanner_data()
         )
         
