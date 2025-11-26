@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2 } from 'lucide-react'
+import { Asset } from 'next/font/google'
 
 export default function PropostePage() {
   const [proposals, setProposals] = useState<any[]>([])
@@ -244,7 +245,7 @@ export default function PropostePage() {
                     value={formData.asset}
                     onChange={(e) => setFormData({ ...formData, asset: e.target.value })}
                     onBlur={() => handleTickerChange(formData.asset)}
-                    placeholder="E.g.: NASDAQ:AAPL"
+                    placeholder="Exact ticker symbol from Yahoo Finance, ex. AAPL or ISP.MI"
                     required
                   />
                 </div>
@@ -331,6 +332,14 @@ export default function PropostePage() {
                     type="date"
                     value={formData.target_date}
                     onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Link</label>
+                  <Input
+                    type="url"
+                    value={"https://finance.yahoo.com/quote/" + formData.asset + "/"}
                   />
                 </div>
 
