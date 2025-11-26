@@ -182,7 +182,7 @@ def get_ticker_info():
         ticker = yf.Ticker(ticker_input)
 
         price = ticker_obj.history(period='1d')['Close'].iloc[-1]
-        currency = ticker.obj.info('currency', 'USD')
+        currency = ticker.obj.info('currency')
         
         if price is None:
             return jsonify({'error': f'Prezzo non disponibile per {ticker_input}'}), 404
