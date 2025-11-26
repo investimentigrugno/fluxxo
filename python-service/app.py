@@ -183,7 +183,7 @@ def get_ticker_info():
         ticker = yf.Ticker(ticker_input)
         
         # fast_info è ottimizzato e non fa troppe chiamate
-        price = ticker.fast_info.get('lastPrice')
+        price = ticker.fast_info.get('regularMarketPrice')
         currency = ticker.fast_info.get('currency')
         
         if price is None:
