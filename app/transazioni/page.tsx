@@ -57,10 +57,11 @@ export default function TransazioniPage() {
     setSubmitting(true)
 
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
       const totale = (parseFloat(formData.quantita) * parseFloat(formData.prezzo_unitario)) +
         parseFloat(formData.commissioni)
 
-      // Costruzione data completa date+time per timestamp supabase
       let dateTime = formData.data
       if (formData.ora) {
         dateTime += 'T' + formData.ora
@@ -81,15 +82,14 @@ export default function TransazioniPage() {
           long_short: formData.lungo_breve,
           note: formData.note,
           created_at: new Date().toISOString(),
-          user_id: supabase.auth.user()?.id || null,  // Inserisci user id se presente
-          order_id: null  // Default null, se usi ordini collegali separatamente
+          user_id: user?.id || null,
+          order_id: null
         }])
 
       if (error) {
         alert('Errore: ' + error.message)
       } else {
         alert('✅ Transazione salvata!')
-
         setFormData({
           data: '',
           ora: '',
@@ -102,8 +102,7 @@ export default function TransazioniPage() {
           lungo_breve: 'L',
           note: ''
         })
-
-        await loadTransactions() // Ricarica lista dopo inserimento
+        await loadTransactions()
       }
     } catch (error: any) {
       alert('Errore imprevisto: ' + error.message)
@@ -111,6 +110,7 @@ export default function TransazioniPage() {
       setSubmitting(false)
     }
   }
+
 
 
   return (
