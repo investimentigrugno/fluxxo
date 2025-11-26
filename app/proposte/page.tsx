@@ -49,7 +49,9 @@ export default function PropostePage() {
       setFormData(prev => ({
         ...prev,
         entry_price: data.price.toFixed(2),
-        currency: data.currency
+        currency: data.currency,
+        sector: data.sector,
+        name: data.name
       }))
       // Ritorna la valuta per calcolo successivo
       return data.currency
