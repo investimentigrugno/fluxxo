@@ -349,6 +349,7 @@ export default function PropostePage() {
                     value={formData.currency}
                     onChange={(e) => setFormData({ ...formData, currency: e.target.value.toUpperCase() })}
                     maxLength={5}
+                    readOnly
                   />
                 </div>
 
