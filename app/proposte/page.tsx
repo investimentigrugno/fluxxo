@@ -26,6 +26,7 @@ export default function PropostePage() {
     take_profit: '',
     stop_loss: '',
     currency: 'EUR',
+    getExchangeRate: '',
     target_date: '',
     motivation: ''
   })
@@ -93,9 +94,10 @@ export default function PropostePage() {
 
     const ep = parseFloat(formData.entry_price)
     const qty = parseInt(formData.quantity)
+    const rate = await getExchangeRate(currency, 'EUR')
 
     if (isNaN(ep) || isNaN(qty)) {
-      setFormData(prev => ({ ...prev, percent_liquidity: '' }))
+      setFormData(prev => ({ ...prev, percent_liquidity: '', getExchangeRate: rate.toFixed(4) }))
       return
     }
 
@@ -173,6 +175,7 @@ export default function PropostePage() {
         take_profit: '',
         stop_loss: '',
         currency: 'EUR',
+        getExchangeRate: '',
         target_date: '',
         motivation: ''
       })
@@ -343,14 +346,27 @@ export default function PropostePage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Currency</label>
-                  <Input
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value.toUpperCase() })}
-                    maxLength={5}
-                    readOnly
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Currency</label>
+                    <Input
+                      value={formData.currency}
+                      onChange={(e) => setFormData({ ...formData, currency: e.target.value.toUpperCase() })}
+                      maxLength={5}
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                      <label className="block text-sm font-medium mb-1">Exchange Rate (to EUR)</label>
+                      <Input
+                        type="number"
+                        step="0.0001"
+                        value={formData.getExchangeRate}
+                        readOnly
+                        placeholder="Auto-calculated"
+                        className="bg-gray-50"
+                      />
+                  </div>
                 </div>
 
                 <div>
