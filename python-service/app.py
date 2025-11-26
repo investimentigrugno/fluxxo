@@ -181,7 +181,7 @@ def get_ticker_info():
         
         ticker = yf.Ticker(ticker_input)
 
-        price = ticker.info['currentPrice']
+        price = ticker_obj.history(period='1d')['Close'].iloc[-1]
         currency = ticker.info['currency']
         
         if price is None:
