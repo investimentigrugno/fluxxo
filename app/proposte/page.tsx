@@ -317,7 +317,7 @@ export default function PropostePage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Total amount</label>
+                    <label className="block text-sm font-medium mb-1">Total amount EUR</label>
                     <Input
                       type="number"
                       step="0.01"
