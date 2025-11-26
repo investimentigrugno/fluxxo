@@ -22,6 +22,7 @@ export default function PropostePage() {
     type: 'BUY',
     entry_price: '',
     quantity: '',
+    total_amount: '',
     percent_liquidity: '',
     take_profit: '',
     stop_loss: '',
@@ -171,6 +172,7 @@ export default function PropostePage() {
         type: 'BUY',
         entry_price: '',
         quantity: '',
+        total_amount: '',
         percent_liquidity: '',
         take_profit: '',
         stop_loss: '',
@@ -313,16 +315,27 @@ export default function PropostePage() {
                     />
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Percent Liquidity</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.percent_liquidity}
-                    readOnly
-                    placeholder="Auto-calculated"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Total amount</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={(parseFloat(formData.entry_price) * parseInt(formData.quantity) * parseFloat(formData.getExchangeRate)).toFixed(2)}
+                      readOnly
+                      placeholder="Auto-calculated"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Percent Liquidity</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.percent_liquidity}
+                      readOnly
+                      placeholder="Auto-calculated"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
