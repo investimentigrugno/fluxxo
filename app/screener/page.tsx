@@ -254,14 +254,11 @@ export default function ScreenerPage() {
                         <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
                           <TableHead className="font-bold">Rank</TableHead>
                           <TableHead className="font-bold">Ticker</TableHead>
+                          <TableHead className="font-bold">Industry</TableHead>
+                          <TableHead className="text-right font-bold">Price</TableHead>
                           <TableHead className="font-bold">Score</TableHead>
-                          <TableHead className="text-right font-bold">Prezzo</TableHead>
-                          <TableHead className="text-right font-bold">RSI</TableHead>
-                          <TableHead className="text-right font-bold">MACD</TableHead>
                           <TableHead className="font-bold">Trend</TableHead>
-                          <TableHead className="text-right font-bold">Volatilità</TableHead>
-                          <TableHead className="font-bold">Rating Tecnico</TableHead>
-                          <TableHead className="font-bold text-center">Grafico</TableHead>
+                          <TableHead className="font-bold text-center">Chart</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -285,6 +282,18 @@ export default function ScreenerPage() {
                               </div>
                             </TableCell>
 
+                            {/* Industry */}
+                            <TableCell>
+                              <p className="text-sm text-gray-600">
+                                {stock.industry || 'N/A'}
+                              </p>
+                            </TableCell>
+
+                            {/* Prezzo */}
+                            <TableCell className="text-right font-semibold">
+                              {stock.close?.toFixed(2)}{stock.currency}
+                            </TableCell>
+
                             {/* Investment Score */}
                             <TableCell>
                               <Badge 
@@ -296,30 +305,6 @@ export default function ScreenerPage() {
                               >
                                 {stock.InvestmentScore}
                               </Badge>
-                            </TableCell>
-
-                            {/* Prezzo */}
-                            <TableCell className="text-right font-semibold">
-                              {stock.close?.toFixed(2)}{stock.currency}
-                            </TableCell>
-
-                            {/* RSI */}
-                            <TableCell className="text-right">
-                              <Badge variant={
-                                stock.RSI > 70 ? 'destructive' :
-                                stock.RSI < 30 ? 'default' : 'secondary'
-                              }>
-                                {stock.RSI?.toFixed(1)}
-                              </Badge>
-                            </TableCell>
-
-                            {/* MACD */}
-                            <TableCell className="text-right">
-                              <span className={`font-semibold ${
-                                stock['MACD.macd'] > 0 ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                {stock['MACD.macd']?.toFixed(3)}
-                              </span>
                             </TableCell>
 
                             {/* Trend Score */}
@@ -334,23 +319,6 @@ export default function ScreenerPage() {
                                   <TrendingDown className="h-4 w-4 text-gray-400" />
                                 )}
                               </div>
-                            </TableCell>
-
-                            {/* Volatilità */}
-                            <TableCell className="text-right font-semibold">
-                              {stock['Volatility.D']?.toFixed(2)}%
-                            </TableCell>
-
-                            {/* Rating Tecnico */}
-                            <TableCell>
-                              <Badge className={
-                                stock['Recommend.All'] > 0.5 ? 'bg-green-600' :
-                                stock['Recommend.All'] > 0.1 ? 'bg-blue-500' :
-                                stock['Recommend.All'] > -0.1 ? 'bg-yellow-500' :
-                                stock['Recommend.All'] > -0.5 ? 'bg-orange-500' : 'bg-red-500'
-                              }>
-                                {stock.TechnicalRating}
-                              </Badge>
                             </TableCell>
 
                             {/* Grafico Button */}
