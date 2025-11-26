@@ -172,7 +172,7 @@ export default function ScreenerPage() {
                       {/* Prezzo */}
                       <div className="text-center py-3 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg">
                         <p className="text-3xl font-bold text-gray-800">
-                          {stock.close?.toFixed(2)}{stock.currency}
+                          {stock.close?.toFixed(2)} {stock.currency}
                         </p>
                         <p className="text-xs text-gray-600">Price</p>
                       </div>
