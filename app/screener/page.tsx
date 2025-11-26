@@ -7,10 +7,12 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react'
+import TradingViewWidget from '../api/screener/tradingview-cahrt/TradingViewWidget'
 
 export default function ScreenerPage() {
   const [stocks, setStocks] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
 
   async function loadScreenerData() {
     setLoading(true)
@@ -229,6 +231,12 @@ export default function ScreenerPage() {
                         </p>
                       </div>
                     </CardContent>
+                    <Button
+                      onClick={() => setSelectedSymbol(stock.name)}
+                      className="w-full mt-3 bg-gradient-to-r from-blue-600 to-purple-600"
+                    >
+                      🖥️ Mostra Grafico
+                    </Button>
                   </Card>
                 ))}
               </div>
@@ -253,6 +261,7 @@ export default function ScreenerPage() {
                           <TableHead className="font-bold">Trend</TableHead>
                           <TableHead className="text-right font-bold">Volatilità</TableHead>
                           <TableHead className="font-bold">Rating Tecnico</TableHead>
+                          <TableHead className="font-bold text-center">Grafico</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -291,7 +300,7 @@ export default function ScreenerPage() {
 
                             {/* Prezzo */}
                             <TableCell className="text-right font-semibold">
-                              ${stock.close?.toFixed(2)}
+                              {stock.close?.toFixed(2)}{stock.currency}
                             </TableCell>
 
                             {/* RSI */}
@@ -343,6 +352,17 @@ export default function ScreenerPage() {
                                 {stock.TechnicalRating}
                               </Badge>
                             </TableCell>
+
+                            {/* Grafico Button */}
+                            <TableCell className="text-center">
+                              <Button
+                                size="sm"
+                                onClick={() => setSelectedSymbol(stock.name)}
+                                className="bg-gradient-to-r from-blue-600 to-purple-600"
+                              >
+                                🖥️
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -371,6 +391,18 @@ export default function ScreenerPage() {
         )}
 
       </div>
+      {selectedSymbol && (
+        <div className="fixed bottom-4 right-4 w-96 h-[400px] bg-white border rounded-lg shadow-xl p-4 z-50">
+          <Button
+            onClick={() => setSelectedSymbol(null)}
+            className="mb-2"
+            variant="destructive"
+          >
+            Chiudi Grafico
+          </Button>
+          <TradingViewWidget symbol={selectedSymbol} />
+        </div>
+      )}
     </div>
   )
 }
