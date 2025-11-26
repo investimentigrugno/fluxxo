@@ -58,7 +58,7 @@ export default function ScreenerPage() {
             📊 Stock Screener
           </h1>
           <p className="text-xl text-gray-600 mb-2">
-            Top 100 titoli analizzati con investment score in tempo reale
+            Top 100 stocks analyzed with investment score in real time
           </p>
           <p className="text-sm text-gray-500">
             Powered by TradingView & Advanced Scoring Algorithm
@@ -101,16 +101,16 @@ export default function ScreenerPage() {
                   {loading ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                      Scansione in corso...
+                      Scanning...
                     </>
                   ) : (
                     <>
-                      🔄 Aggiorna Screening
+                      🔄 Refresh
                     </>
                   )}
                 </Button>
                 <p className="text-xs text-gray-500">
-                  Ultimo aggiornamento: {new Date().toLocaleTimeString('it-IT')}
+                  Last update: {new Date().toLocaleTimeString('it-IT')}
                 </p>
               </div>
             </div>
@@ -122,8 +122,8 @@ export default function ScreenerPage() {
           <Card>
             <CardContent className="py-20 text-center">
               <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
-              <p className="text-xl font-semibold text-gray-700">Scansione mercati in corso...</p>
-              <p className="text-sm text-gray-500 mt-2">Analizzando 100+ titoli con TradingView</p>
+              <p className="text-xl font-semibold text-gray-700">Scanning markets</p>
+              <p className="text-sm text-gray-500 mt-2">Scanning stocks with TradingView</p>
             </CardContent>
           </Card>
         )}
@@ -137,7 +137,7 @@ export default function ScreenerPage() {
                 🏆 Top 5 Picks
               </TabsTrigger>
               <TabsTrigger value="all" className="text-base">
-                📊 Tutti ({stocks.length})
+                📊 All ({stocks.length})
               </TabsTrigger>
             </TabsList>
 
@@ -257,7 +257,6 @@ export default function ScreenerPage() {
                           <TableHead className="font-bold">Industry</TableHead>
                           <TableHead className="text-right font-bold">Price</TableHead>
                           <TableHead className="font-bold">Score</TableHead>
-                          <TableHead className="font-bold">Trend</TableHead>
                           <TableHead className="font-bold text-center">Chart</TableHead>
                         </TableRow>
                       </TableHeader>
