@@ -193,7 +193,7 @@ def get_ticker_info():
         
         return jsonify({
             'price': float(price),
-            'currency': currency.upper()
+            'currency': currency.upper(),
             'name': name,
             'sector': sector
         })
