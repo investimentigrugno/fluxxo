@@ -181,7 +181,7 @@ export default function ScreenerPage() {
                         <div className="flex justify-between items-center border-b pb-1">
                           <span className="text-gray-600">RSI Score</span>
                           <Badge variant={stock.RSIScore >= 8 ? 'default' : 'secondary'}>
-                            {stock.RSIScore}/20
+                            {stock.RSIScore}/10
                           </Badge>
                         </div>
                         
@@ -272,7 +272,7 @@ export default function ScreenerPage() {
                             <TableCell>
                               <div>
                                 <p className="font-semibold text-gray-900">{stock.name}</p>
-                                <p className="text-xs text-gray-500">{stock.market || 'N/A'}</p>
+                                <p className="text-xs text-gray-500">{stock.description || 'N/A'}</p>
                               </div>
                             </TableCell>
 
