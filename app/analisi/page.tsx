@@ -46,14 +46,14 @@ export default function AnalisiPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">🔍 Analisi Singolo Titolo</h1>
+      <h1 className="text-3xl font-bold mb-6">🔍 Analysis</h1>
 
       {/* Barra Ricerca */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Cerca Ticker</CardTitle>
           <p className="text-sm text-gray-600">
-            Inserisci il ticker nel formato: NASDAQ:AAPL, NYSE:TSLA, MIL:ENEL
+            Insert right TradingView ticker NASDAQ:AAPL, NYSE:TSLA, MIL:ENEL
           </p>
         </CardHeader>
         <CardContent>
@@ -80,7 +80,7 @@ export default function AnalisiPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Recupero dati da TradingView...</p>
+            <p>Recovering data from TradingView...</p>
           </CardContent>
         </Card>
       )}
@@ -89,7 +89,7 @@ export default function AnalisiPage() {
       {!fundamentalData && !loading && (
         <Card>
           <CardContent className="py-12 text-center text-gray-500">
-            Inserisci un ticker per iniziare l'analisi
+            Insert a ticker to see fundamental and technical analysis.
           </CardContent>
         </Card>
       )}
@@ -133,7 +133,7 @@ export default function AnalisiPage() {
                 {/* Valutazione */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">💰 Valutazione</CardTitle>
+                    <CardTitle className="text-lg">💰 Evaluation</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex justify-between border-b pb-2">
@@ -172,7 +172,7 @@ export default function AnalisiPage() {
                 {/* Redditività */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">📈 Redditività</CardTitle>
+                    <CardTitle className="text-lg">📈 Profitability</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex justify-between border-b pb-2">
@@ -211,7 +211,7 @@ export default function AnalisiPage() {
                 {/* Bilancio */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">🏛️ Bilancio</CardTitle>
+                    <CardTitle className="text-lg">🏛️ Balance</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex justify-between border-b pb-2">
@@ -252,7 +252,7 @@ export default function AnalisiPage() {
               {/* Crescita YoY */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">📊 Crescita Year-over-Year</CardTitle>
+                  <CardTitle className="text-lg">📊 Growth YoY</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -295,31 +295,31 @@ export default function AnalisiPage() {
                 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">🎯 Target Price Analisti</CardTitle>
+                    <CardTitle className="text-lg">🎯 Analyst Target Price</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="text-center p-4 bg-green-50 rounded">
-                        <p className="text-sm text-gray-600">Alto</p>
+                        <p className="text-sm text-gray-600">High</p>
                         <p className="text-2xl font-bold text-green-600">
                           {fundamentalData.price_target_high?.toFixed(2) || 'N/A'} {fundamentalData.currency}
                         </p>
                       </div>
                       <div className="text-center p-4 bg-blue-50 rounded">
-                        <p className="text-sm text-gray-600">Medio</p>
+                        <p className="text-sm text-gray-600">Mid</p>
                         <p className="text-2xl font-bold text-blue-600">
                           {fundamentalData.price_target_median?.toFixed(2) || 'N/A'} {fundamentalData.currency}
                         </p>
                       </div>
                       <div className="text-center p-4 bg-red-50 rounded">
-                        <p className="text-sm text-gray-600">Basso</p>
+                        <p className="text-sm text-gray-600">Low</p>
                         <p className="text-2xl font-bold text-red-600">
                           {fundamentalData.price_target_low?.toFixed(2) || 'N/A'} {fundamentalData.currency}
                         </p>
                       </div>
                     </div>
                     <div className="mt-3 text-center">
-                      <p className="text-sm text-gray-600">Upside Potenziale</p>
+                      <p className="text-sm text-gray-600">Potential Upside</p>
                       <p className="text-xl font-bold text-purple-600">
                         {((fundamentalData.price_target_median - fundamentalData.close) / fundamentalData.close * 100)?.toFixed(1)}%
                       </p>
@@ -483,7 +483,7 @@ export default function AnalisiPage() {
               {/* Medie Mobili SMA + EMA */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">📊 Medie Mobili</CardTitle>
+                  <CardTitle className="text-lg">📊 Moving Average</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -602,7 +602,7 @@ export default function AnalisiPage() {
                 {/* Volatilità */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">⚡ Volatilità</CardTitle>
+                    <CardTitle className="text-lg">⚡ Volatility</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -610,11 +610,11 @@ export default function AnalisiPage() {
                       <span className="font-bold">{fundamentalData.ATR?.toFixed(2) || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Vol. Giornaliera:</span>
+                      <span className="text-gray-600">Daily Vol:</span>
                       <span className="font-bold">{fundamentalData['Volatility.D']?.toFixed(2)}%</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Vol. Settimanale:</span>
+                      <span className="text-gray-600">Weekly Vol:</span>
                       <span className="font-bold">{fundamentalData['Volatility.W']?.toFixed(2) || 'N/A'}%</span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -627,7 +627,7 @@ export default function AnalisiPage() {
                 {/* Rating Tecnico */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">🎯 Rating Tecnico</CardTitle>
+                    <CardTitle className="text-lg">🎯 Tehcnical Rating</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-center space-y-2">
@@ -646,8 +646,8 @@ export default function AnalisiPage() {
                          fundamentalData['Recommend.All'] > -0.5 ? '🟠 Sell' : '🔴 Strong Sell'}
                       </Badge>
                       <div className="text-xs text-gray-600 space-y-1 mt-2">
-                        <p>Oscillatori: {fundamentalData['Recommend.Other']?.toFixed(2) || 'N/A'}</p>
-                        <p>Medie Mobili: {fundamentalData['Recommend.MA']?.toFixed(2) || 'N/A'}</p>
+                        <p>Oscillators: {fundamentalData['Recommend.Other']?.toFixed(2) || 'N/A'}</p>
+                        <p>Moving Average: {fundamentalData['Recommend.MA']?.toFixed(2) || 'N/A'}</p>
                       </div>
                     </div>
                   </CardContent>
