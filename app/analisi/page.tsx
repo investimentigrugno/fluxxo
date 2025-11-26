@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2 } from 'lucide-react'
+import TradingViewWidget from '../api/screener/tradingview-cahrt/TradingViewWidget'
 
 export default function AnalisiPage() {
   const [tickerSearch, setTickerSearch] = useState('')
@@ -114,11 +115,11 @@ export default function AnalisiPage() {
             </CardHeader>
           </Card>
 
-          {/* 2 TAB: Fondamentale + Tecnica */}
           <Tabs defaultValue="fondamentale">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="fondamentale">📊 Analisi Fondamentale</TabsTrigger>
-              <TabsTrigger value="tecnica">📈 Analisi Tecnica</TabsTrigger>
+              <TabsTrigger value="fondamentale">📊 Fundamental Analysis</TabsTrigger>
+              <TabsTrigger value="tecnica">📈 Technical Analysis</TabsTrigger>
+              <TabsTrigger value="chart">🖥️ Interactive Chart</TabsTrigger>
             </TabsList>
 
             {/* ============================================ */}
@@ -713,6 +714,21 @@ export default function AnalisiPage() {
 
               </div>
 
+            </TabsContent>
+
+            {/* ============================================ */}
+            {/* TAB 3: GRAFICO */}
+            {/* ============================================ */}
+            <TabsContent value="chart" className="space-y-4">
+              <Card className="h-[600px]">
+                <CardHeader>
+                  <CardTitle className="text-lg">🖥️ Interactive Chart</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[520px]">
+                  {/* Usa il ticker attuale; se vuoi, puoi usare un campo dedicato in fundamentalData */}
+                  <TradingViewWidget symbol={tickerSearch || 'NASDAQ:AAPL'} />
+                </CardContent>
+              </Card>
             </TabsContent>
 
           </Tabs>
