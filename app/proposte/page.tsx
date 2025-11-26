@@ -17,6 +17,8 @@ export default function PropostePage() {
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     asset: '',
+    name: '',
+    sector: '',
     type: 'BUY',
     entry_price: '',
     quantity: '',
@@ -162,6 +164,8 @@ export default function PropostePage() {
       alert('✅ Proposta creata con successo')
       setFormData({
         asset: '',
+        name: '',
+        sector: '',
         type: 'BUY',
         entry_price: '',
         quantity: '',
@@ -249,6 +253,26 @@ export default function PropostePage() {
                     onBlur={() => handleTickerChange(formData.asset)}
                     placeholder="Exact ticker symbol from Yahoo Finance, ex. AAPL or ISP.MI"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Name</label>
+                  <Input
+                    value={formData.name}
+                    readOnly
+                    placeholder="Auto-filled from ticker"
+                    className="bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Sector</label>
+                  <Input
+                    value={formData.sector}
+                    readOnly
+                    placeholder="Auto-filled from ticker"
+                    className="bg-gray-50"
                   />
                 </div>
 
