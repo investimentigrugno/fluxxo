@@ -392,16 +392,21 @@ export default function ScreenerPage() {
 
       </div>
       {selectedSymbol && (
-        <div className="fixed bottom-4 right-4 w-96 h-[400px] bg-white border rounded-lg shadow-xl p-4 z-50">
+      <div className="fixed inset-4 bg-white border rounded-lg shadow-xl p-4 z-50 flex flex-col">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-bold">Grafico {selectedSymbol}</h3>
           <Button
             onClick={() => setSelectedSymbol(null)}
-            className="mb-2"
             variant="destructive"
+            size="sm"
           >
-            Chiudi Grafico
+          X Chiudi
           </Button>
+        </div>
+        <div className="flex-1 min-h-0">
           <TradingViewWidget symbol={selectedSymbol} />
         </div>
+      </div>
       )}
     </div>
   )
