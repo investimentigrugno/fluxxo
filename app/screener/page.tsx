@@ -165,7 +165,7 @@ export default function ScreenerPage() {
                         </Badge>
                       </div>
                       <CardTitle className="text-xl">{stock.name}</CardTitle>
-                      <p className="text-xs text-gray-500">{stock.country}</p>
+                      <p className="text-xs text-gray-500">{stock.description}</p>
                     </CardHeader>
 
                     <CardContent className="space-y-3">
@@ -188,7 +188,7 @@ export default function ScreenerPage() {
                         <div className="flex justify-between items-center border-b pb-1">
                           <span className="text-gray-600">MACD Score</span>
                           <Badge variant={stock.MACDScore >= 7 ? 'default' : 'secondary'}>
-                            {stock.MACDScore}/15
+                            {stock.MACDScore}/10
                           </Badge>
                         </div>
 
