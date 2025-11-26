@@ -189,11 +189,13 @@ def get_ticker_info():
         if price is None:
             return jsonify({'error': f'Prezzo non disponibile per {ticker_input}'}), 404
         
-        print(f"✅ Price: {price} {currency}")
+        print(f"✅ Price: {price} {currency} {name} {sector}")
         
         return jsonify({
             'price': float(price),
             'currency': currency.upper()
+            'name': name,
+            'sector': sector
         })
         
     except Exception as e:
