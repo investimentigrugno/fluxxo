@@ -183,8 +183,8 @@ def get_ticker_info():
         ticker = yf.Ticker(ticker_input)
         
         # fast_info è ottimizzato e non fa troppe chiamate
-        price = ticker.info.get('regularMarketPrice')
-        currency = ticker.info.get('currency')
+        price = ticker.info('regularMarketPrice')
+        currency = ticker.info('currency')
         
         if price is None:
             return jsonify({'error': f'Prezzo non disponibile per {ticker_input}'}), 404
