@@ -57,32 +57,6 @@ class handler(BaseHTTPRequestHandler):
                 )
             )
             
-            # Applica filtri specifici
-            if filter_type == 'top_score':
-                query = query.where(
-                    Column('RSI').between(50, 70),
-                    Column('Recommend.All') > 0.3
-                )
-            elif filter_type == 'value':
-                query = query.where(
-                    Column('price_earnings_ttm') < 20,
-                    Column('price_earnings_ttm') > 5
-                )
-            elif filter_type == 'growth':
-                query = query.where(
-                    Column('Perf.1M') > 5,
-                    Column('RSI') < 70
-                )
-            elif filter_type == 'dividend':
-                # Per dividend serve aggiungere colonna dividend_yield_recent
-                pass
-            elif filter_type == 'momentum':
-                query = query.where(
-                    Column('RSI') > 50,
-                    Column('MACD.macd') > Column('MACD.signal'),
-                    Column('Recommend.All') > 0.3
-                )
-            
             # Ordina per market cap e limita risultati
             query = query.order_by('market_cap_basic', ascending=False).limit(100)
             
@@ -109,7 +83,7 @@ class handler(BaseHTTPRequestHandler):
                 for key, value in stock.items():
                     if pd.isna(value):
                         stock[key] = None
-            
+
             # Risposta
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -140,3 +114,4 @@ class handler(BaseHTTPRequestHandler):
             'status': 'ok',
             'message': 'TradingView Screener API - Use POST with filterType parameter'
         }).encode())
+

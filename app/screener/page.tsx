@@ -165,7 +165,7 @@ export default function ScreenerPage() {
                         </Badge>
                       </div>
                       <CardTitle className="text-xl">{stock.name}</CardTitle>
-                      <p className="text-xs text-gray-500">{stock.market || 'Global'}</p>
+                      <p className="text-xs text-gray-500">{stock.country}</p>
                     </CardHeader>
 
                     <CardContent className="space-y-3">
@@ -174,7 +174,7 @@ export default function ScreenerPage() {
                         <p className="text-3xl font-bold text-gray-800">
                           ${stock.close?.toFixed(2)}
                         </p>
-                        <p className="text-xs text-gray-600">Prezzo Attuale</p>
+                        <p className="text-xs text-gray-600">Price</p>
                       </div>
 
                       {/* Metriche */}
@@ -206,14 +206,14 @@ export default function ScreenerPage() {
                         </div>
 
                         <div className="flex justify-between items-center border-b pb-1">
-                          <span className="text-gray-600">Volatilità:</span>
+                          <span className="text-gray-600">Daily Vol.:</span>
                           <span className="font-semibold text-gray-800">
                             {stock['Volatility.D']?.toFixed(2)}%
                           </span>
                         </div>
 
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Rating:</span>
+                          <span className="text-gray-600">Techn. Rating:</span>
                           <Badge className={
                             stock['Recommend.All'] > 0.5 ? 'bg-green-600' :
                             stock['Recommend.All'] > 0.1 ? 'bg-blue-500' :
@@ -228,7 +228,7 @@ export default function ScreenerPage() {
                       {/* Motivazione */}
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
                         <p className="text-xs font-semibold text-gray-700 mb-1">
-                          💡 Motivi dell'investimento:
+                          💡 Advantages:
                         </p>
                         <p className="text-xs text-gray-600 leading-relaxed">
                           {stock.RecommendationReason}
