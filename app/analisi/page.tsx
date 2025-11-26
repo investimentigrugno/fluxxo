@@ -51,7 +51,7 @@ export default function AnalisiPage() {
       {/* Barra Ricerca */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Cerca Ticker</CardTitle>
+          <CardTitle>Find Ticker</CardTitle>
           <p className="text-sm text-gray-600">
             Insert right TradingView ticker NASDAQ:AAPL, NYSE:TSLA, MIL:ENEL
           </p>
