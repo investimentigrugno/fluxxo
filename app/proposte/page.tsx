@@ -337,7 +337,7 @@ export default function PropostePage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Link</label>
-                    {"https://finance.yahoo.com/quote/" + formData.asset + "/"}
+                    <a href="url">{"https://finance.yahoo.com/quote/" + formData.asset + "/"}</a>
                 </div>
 
                 <div>
