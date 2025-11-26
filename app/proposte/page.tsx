@@ -337,10 +337,8 @@ export default function PropostePage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Link</label>
-                  <Input
                     type="url"
                     value={"https://finance.yahoo.com/quote/" + formData.asset + "/"}
-                  />
                 </div>
 
                 <div>
