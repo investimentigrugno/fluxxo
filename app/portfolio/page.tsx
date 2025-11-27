@@ -5,6 +5,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import AuthWrapper from '@/components/ui/AuthWrapper'
 
 export default function PortfolioPage() {
   const supabase = createClientComponentClient()
@@ -88,6 +89,7 @@ export default function PortfolioPage() {
   }, [])
 
   return (
+    <AuthWrapper>
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">📈 Portafoglio</h1>
 
@@ -183,5 +185,6 @@ export default function PortfolioPage() {
         ⚠️ Nota: I prezzi correnti e i P&L in tempo reale richiedono un'API esterna (es. yfinance, TradingView API)
       </p>
     </div>
+    </AuthWrapper>
   )
 }

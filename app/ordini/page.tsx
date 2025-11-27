@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import AuthWrapper from '@/components/ui/AuthWrapper'
 
 export default function OrdiniPage() {
   const supabase = createClientComponentClient()
@@ -56,6 +57,7 @@ export default function OrdiniPage() {
   const cancelledOrders = orders.filter(o => o.status === 'cancelled')
 
   return (
+    <AuthWrapper>
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">📊 Ordini</h1>
 
@@ -191,5 +193,6 @@ export default function OrdiniPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </AuthWrapper>
   )
 }

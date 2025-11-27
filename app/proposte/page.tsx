@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2 } from 'lucide-react'
+import AuthWrapper from '@/components/ui/AuthWrapper'
 
 export default function PropostePage() {
   const [proposals, setProposals] = useState<any[]>([])
@@ -178,6 +179,7 @@ export default function PropostePage() {
   }
 
   return (
+    <AuthWrapper>
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">💡 Proposte</h1>
 
@@ -351,5 +353,6 @@ export default function PropostePage() {
         </TabsContent>
       </Tabs>
     </div>
+    </AuthWrapper>
   )
 }

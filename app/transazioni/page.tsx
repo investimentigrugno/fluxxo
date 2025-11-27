@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import AuthWrapper from '@/components/ui/AuthWrapper'
 
 export default function TransazioniPage() {
   const supabase = createClientComponentClient()
@@ -111,6 +112,7 @@ export default function TransazioniPage() {
   }
 
   return (
+    <AuthWrapper>
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">💰 Transazioni</h1>
 
@@ -315,5 +317,6 @@ export default function TransazioniPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </AuthWrapper>
   )
 }

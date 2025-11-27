@@ -2,9 +2,15 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect, useState } from 'react'
+import AuthWrapper from '@/components/ui/AuthWrapper'
+
+
 
 export default function Home() {
   return (
+    <AuthWrapper>
     <div className="container mx-auto px-4 py-12">
       
       {/* Features Grid */}
@@ -105,5 +111,6 @@ export default function Home() {
       </Card>
 
     </div>
+    </AuthWrapper>
   )
 }
