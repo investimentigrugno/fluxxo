@@ -173,42 +173,75 @@ def get_ticker_info():
     try:
         data = request.get_json() or {}
         ticker_input = data.get('ticker', '')
-        
+
         if not ticker_input:
             return jsonify({'error': 'Ticker richiesto'}), 400
-        
+
         print(f"🔍 Fetching info for ticker: {ticker_input}")
-        
+
         ticker = yf.Ticker(ticker_input)
+        info = ticker.info
+
+        # Accesso con try-except per evitare KeyError o valori None
+        try:
+            name = info['shortName']
+            if not name:
+                raise KeyError
+        except KeyError:
+            try:
+                name = info['longName']
+                if not name:
+                    raise KeyError
+            except KeyError:
+                name = ticker_input  # fallback generico
 
         try:
-            name = ticker.info['shortName']
+            sector = info['sector']
+            if not sector:
+                raise KeyError
         except KeyError:
-            name = ticker.info['longName']
+            try:
+                sector = info['industry']
+                if not sector:
+                    raise KeyError
+            except KeyError:
+                sector = 'N/A'  # fallback generico
 
         try:
-            sector = ticker.info['sector']
+            price = info['regularMarketPrice']
+            if not price:
+                raise KeyError
         except KeyError:
-            sector = ticker.info['industry']
+            try:
+                price = info['currentPrice']
+                if not price:
+                    raise KeyError
+            except KeyError:
+                price = None
 
-        price = ticker.info['regularMarketPrice']
-        currency = ticker.info['currency']
-        
+        try:
+            currency = info['currency']
+            if not currency:
+                raise KeyError
+        except KeyError:
+            currency = 'USD'  # fallback
+
         if price is None:
             return jsonify({'error': f'Prezzo non disponibile per {ticker_input}'}), 404
-        
+
         print(f"✅ Price: {price} {currency} {name} {sector}")
-        
+
         return jsonify({
             'price': float(price),
             'currency': currency.upper(),
             'name': name,
             'sector': sector
         })
-        
+
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
