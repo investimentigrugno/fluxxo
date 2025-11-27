@@ -46,7 +46,6 @@ export default function TransazioniPage() {
       .from('transactions')
       .select('*')
       .order('date', { ascending: false })
-      .limit(100)
 
     if (error) {
       console.error('Errore:', error)
