@@ -275,6 +275,8 @@ export default function PropostePage() {
                 readOnly
                 placeholder="Auto-calculated"
               />
+              </div>
+              <div>
               <label className="block text-sm font-medium mb-1">Percent Liquidity</label>
               <Input
                 type="number"
@@ -292,6 +294,8 @@ export default function PropostePage() {
                 value={formData.currency}
                 readOnly
               />
+              </div>
+              <div>
               <label className="block text-sm font-medium mb-1">Exchange Rate</label>
               <Input
                 type="number"
@@ -311,6 +315,8 @@ export default function PropostePage() {
                 value={formData.take_profit}
                 onChange={e => setFormData({ ...formData, take_profit: e.target.value })}
               />
+              </div>
+              <div>
               <label className="block text-sm font-medium mb-1">Stop Loss (optional)</label>
               <Input
                 type="number"
