@@ -35,7 +35,7 @@ export default function RootLayout({
 
               {/* Navigation Links */}
               <div className="hidden md:flex items-center space-x-1">
-                <Link href="/">
+                <Link href="/portfolio">
                   <Button variant="ghost" className="font-medium">
                     🏠 Home
                   </Button>
@@ -62,7 +62,7 @@ export default function RootLayout({
                 </Link>
                 <Link href="/transazioni">
                   <Button variant="ghost" className="font-medium">
-                    💰 Portfolio
+                    💰 Transazioni
                   </Button>
                 </Link>
               </div>
