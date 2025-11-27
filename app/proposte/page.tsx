@@ -265,47 +265,65 @@ export default function PropostePage() {
               onChange={e => setFormData({ ...formData, quantity: e.target.value })}
               required
             />
-            <label className="block text-sm font-medium mb-1">Percent Liquidity</label>
-            <Input
-              type="number"
-              step="0.01"
-              value={formData.percent_liquidity}
-              readOnly
-              placeholder="Auto-calculated"
-            />
-            <label className="block text-sm font-medium mb-1">Currency</label>
-            <Input
-              value={formData.currency}
-              readOnly
-            />
-            <label className="block text-sm font-medium mb-1">Exchange Rate</label>
-            <Input
-              type="number"
-              step="0.0001"
-              value={formData.getExchangeRate}
-              readOnly
-              placeholder="Auto-calculated"
-            />
-            <label className="block text-sm font-medium mb-1">Take Profit (optional)</label>
-            <Input
-              type="number"
-              step="0.01"
-              value={formData.take_profit}
-              onChange={e => setFormData({ ...formData, take_profit: e.target.value })}
-            />
-            <label className="block text-sm font-medium mb-1">Stop Loss (optional)</label>
-            <Input
-              type="number"
-              step="0.01"
-              value={formData.stop_loss}
-              onChange={e => setFormData({ ...formData, stop_loss: e.target.value })}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block text-sm font-medium mb-1">Total Amount EUR</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={(parseFloat(formData.entry_price) * parseInt(formData.quantity) * parseFloat(formData.getExchangeRate)).toFixed(2)}
+                readOnly
+                placeholder="Auto-calculated"
+              />
+              <label className="block text-sm font-medium mb-1">Percent Liquidity</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.percent_liquidity}
+                readOnly
+                placeholder="Auto-calculated"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block text-sm font-medium mb-1">Currency</label>
+              <Input
+                value={formData.currency}
+                readOnly
+              />
+              <label className="block text-sm font-medium mb-1">Exchange Rate</label>
+              <Input
+                type="number"
+                step="0.0001"
+                value={formData.getExchangeRate}
+                readOnly
+                placeholder="Auto-calculated"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block text-sm font-medium mb-1">Take Profit (optional)</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.take_profit}
+                onChange={e => setFormData({ ...formData, take_profit: e.target.value })}
+              />
+              <label className="block text-sm font-medium mb-1">Stop Loss (optional)</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.stop_loss}
+                onChange={e => setFormData({ ...formData, stop_loss: e.target.value })}
+              />
+            </div>
             <label className="block text-sm font-medium mb-1">Target Date (optional)</label>
             <Input
               type="date"
               value={formData.target_date}
               onChange={e => setFormData({ ...formData, target_date: e.target.value })}
             />
+            <div>
+              <label className="block text-sm font-medium mb-1">Link</label>
+              <a href={"https://finance.yahoo.com/quote/" + formData.asset + "/"}>{"https://finance.yahoo.com/quote/" + formData.asset + "/"}</a>
+            </div>
             <label className="block text-sm font-medium mb-1">Motivation (optional)</label>
             <textarea
               className="w-full p-2 border rounded"
