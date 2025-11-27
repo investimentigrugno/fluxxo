@@ -1,44 +1,54 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export default function TransazioniPage() {
-  // Stato form per nuova transazione
+  const supabase = createClientComponentClient()
+
   const [formData, setFormData] = useState({
-    data: '',
-    ora: '',
-    tipo: 'Buy',
-    strumento: '',
-    quantita: '',
-    prezzo_unitario: '',
-    commissioni: '0',
+    date: '',
+    type: 'Buy',
+    instrument: '',
+    quantity: '',
+    unit_price: '',
+    commission: '0',
     broker: '',
-    lungo_breve: 'L',
-    note: ''
+    long_short: 'L',
+    note: '',
+    currency: 'EUR',
+    exchange_rate: '1'
   })
 
-  // Stato per elenco transazioni caricate da Supabase
   const [transactions, setTransactions] = useState<any[]>([])
   const [loadingTransactions, setLoadingTransactions] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [user, setUser] = useState<any>(null)
 
-  // Funzione per caricare transazioni, con ordinamento discendente per data
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    getUser()
+  }, [supabase.auth])
+
   async function loadTransactions() {
     setLoadingTransactions(true)
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
       .order('date', { ascending: false })
-      .limit(100)  // Limite massimo da visualizzare
+      .limit(100)
 
     if (error) {
-      alert('Errore caricamento transazioni: ' + error.message)
+      alert('Errore caricamento: ' + error.message)
       setTransactions([])
     } else {
       setTransactions(data ?? [])
@@ -46,44 +56,32 @@ export default function TransazioniPage() {
     setLoadingTransactions(false)
   }
 
-  // Caricamento transazioni al montaggio componente
   useEffect(() => {
     loadTransactions()
   }, [])
 
-  // Submit gestione inserimento nuova transazione, con parsing corretto e validazioni minime
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      const totale = (parseFloat(formData.quantita) * parseFloat(formData.prezzo_unitario)) +
-        parseFloat(formData.commissioni)
-
-      let dateTime = formData.data
-      if (formData.ora) {
-        dateTime += 'T' + formData.ora
-      } else {
-        dateTime += 'T00:00:00'
-      }
-
       const { error } = await supabase
         .from('transactions')
         .insert([{
-          date: dateTime,
-          type: formData.tipo,
-          instrument: formData.strumento.toUpperCase(),
-          quantity: parseFloat(formData.quantita),
-          unit_price: parseFloat(formData.prezzo_unitario),
-          commission: parseFloat(formData.commissioni),
-          broker: formData.broker,
-          long_short: formData.lungo_breve,
-          note: formData.note,
-          created_at: new Date().toISOString(),
+          date: formData.date,
+          type: formData.type,
+          instrument: formData.instrument.toUpperCase(),
+          quantity: parseFloat(formData.quantity),
+          unit_price: parseFloat(formData.unit_price),
+          commission: parseFloat(formData.commission),
+          broker: formData.broker || null,
+          long_short: formData.long_short,
+          note: formData.note || null,
+          currency: formData.currency,
+          exchange_rate: parseFloat(formData.exchange_rate),
           user_id: user?.id || null,
-          order_id: null
+          order_id: null,
+          created_at: new Date().toISOString()
         }])
 
       if (error) {
@@ -91,43 +89,39 @@ export default function TransazioniPage() {
       } else {
         alert('✅ Transazione salvata!')
         setFormData({
-          data: '',
-          ora: '',
-          tipo: 'Buy',
-          strumento: '',
-          quantita: '',
-          prezzo_unitario: '',
-          commissioni: '0',
+          date: '',
+          type: 'Buy',
+          instrument: '',
+          quantity: '',
+          unit_price: '',
+          commission: '0',
           broker: '',
-          lungo_breve: 'L',
-          note: ''
+          long_short: 'L',
+          note: '',
+          currency: 'EUR',
+          exchange_rate: '1'
         })
         await loadTransactions()
       }
     } catch (error: any) {
-      alert('Errore imprevisto: ' + error.message)
+      alert('Errore: ' + error.message)
     } finally {
       setSubmitting(false)
     }
   }
-
-
 
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">💰 Transazioni</h1>
 
       <Tabs defaultValue="aggiungi" onValueChange={(val) => {
-        if (val === 'visualizza') {
-          loadTransactions()
-        }
+        if (val === 'visualizza') loadTransactions()
       }}>
         <TabsList>
           <TabsTrigger value="aggiungi">Aggiungi Transazione</TabsTrigger>
           <TabsTrigger value="visualizza">Visualizza</TabsTrigger>
         </TabsList>
 
-        {/* Form aggiungi transazione */}
         <TabsContent value="aggiungi">
           <Card>
             <CardHeader>
@@ -140,45 +134,35 @@ export default function TransazioniPage() {
                     <label className="block text-sm font-medium mb-1">Data</label>
                     <Input
                       type="date"
-                      value={formData.data}
-                      onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       required
                       disabled={submitting}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Ora</label>
-                    <Input
-                      type="time"
-                      value={formData.ora}
-                      onChange={(e) => setFormData({ ...formData, ora: e.target.value })}
-                      disabled={submitting}
-                    />
+                    <label className="block text-sm font-medium mb-1">Tipo</label>
+                    <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })} disabled={submitting}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Buy">Acquisto</SelectItem>
+                        <SelectItem value="Sell">Vendita</SelectItem>
+                        <SelectItem value="Deposit">Deposito</SelectItem>
+                        <SelectItem value="Withdraw">Prelievo</SelectItem>
+                        <SelectItem value="Dividend">Dividendo</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tipo</label>
-                  <Select value={formData.tipo} onValueChange={(v) => setFormData({ ...formData, tipo: v })} disabled={submitting}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Buy">Acquisto</SelectItem>
-                      <SelectItem value="Sell">Vendita</SelectItem>
-                      <SelectItem value="Deposit">Deposito</SelectItem>
-                      <SelectItem value="Withdraw">Prelievo</SelectItem>
-                      <SelectItem value="Dividend">Dividendo</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Strumento (Ticker)</label>
                   <Input
-                    value={formData.strumento}
-                    onChange={(e) => setFormData({ ...formData, strumento: e.target.value })}
-                    placeholder="Es: AAPL, BTC-USD"
+                    value={formData.instrument}
+                    onChange={(e) => setFormData({ ...formData, instrument: e.target.value })}
+                    placeholder="Es: AAPL, BTCEUR"
                     required
                     disabled={submitting}
                   />
@@ -190,8 +174,8 @@ export default function TransazioniPage() {
                     <Input
                       type="number"
                       step="0.0001"
-                      value={formData.quantita}
-                      onChange={(e) => setFormData({ ...formData, quantita: e.target.value })}
+                      value={formData.quantity}
+                      onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                       required
                       disabled={submitting}
                     />
@@ -201,45 +185,71 @@ export default function TransazioniPage() {
                     <Input
                       type="number"
                       step="0.01"
-                      value={formData.prezzo_unitario}
-                      onChange={(e) => setFormData({ ...formData, prezzo_unitario: e.target.value })}
+                      value={formData.unit_price}
+                      onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
                       required
                       disabled={submitting}
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Lungo/Breve</label>
-                  <Select value={formData.lungo_breve} onValueChange={(v) => setFormData({ ...formData, lungo_breve: v })} disabled={submitting}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="L">Lungo (L)</SelectItem>
-                      <SelectItem value="B">Breve (B)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Commissioni</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.commission}
+                      onChange={(e) => setFormData({ ...formData, commission: e.target.value })}
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Valuta</label>
+                    <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v })} disabled={submitting}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="GBP">GBP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Tasso Cambio</label>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      value={formData.exchange_rate}
+                      onChange={(e) => setFormData({ ...formData, exchange_rate: e.target.value })}
+                      disabled={submitting}
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Commissioni</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.commissioni}
-                    onChange={(e) => setFormData({ ...formData, commissioni: e.target.value })}
-                    disabled={submitting}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Broker</label>
-                  <Input
-                    value={formData.broker}
-                    onChange={(e) => setFormData({ ...formData, broker: e.target.value })}
-                    disabled={submitting}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Lungo/Breve</label>
+                    <Select value={formData.long_short} onValueChange={(v) => setFormData({ ...formData, long_short: v })} disabled={submitting}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="L">Lungo (L)</SelectItem>
+                        <SelectItem value="B">Breve (B)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Broker</label>
+                    <Input
+                      value={formData.broker}
+                      onChange={(e) => setFormData({ ...formData, broker: e.target.value })}
+                      disabled={submitting}
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -259,31 +269,46 @@ export default function TransazioniPage() {
           </Card>
         </TabsContent>
 
-        {/* Visualizza transazioni */}
         <TabsContent value="visualizza">
           <Card>
             <CardContent className="py-8">
               {loadingTransactions ? (
                 <p className="text-center text-gray-500">Caricamento...</p>
               ) : transactions.length === 0 ? (
-                <p className="text-center text-gray-500">Nessuna transazione trovata</p>
+                <p className="text-center text-gray-500">Nessuna transazione</p>
               ) : (
-                <ul className="space-y-2 max-h-96 overflow-y-auto">
-                  {transactions.map(tx => (
-                    <li key={tx.id} className="border p-2 rounded shadow-sm">
-                      <div><strong>Data:</strong> {new Date(tx.date).toLocaleDateString()}</div>
-                      <div><strong>Ora:</strong> {tx.date ? new Date(tx.date).toLocaleTimeString() : 'N/A'}</div>
-                      <div><strong>Tipo:</strong> {tx.type}</div>
-                      <div><strong>Strumento:</strong> {tx.instrument}</div>
-                      <div><strong>Quantità:</strong> {tx.quantity}</div>
-                      <div><strong>Prezzo Unitario:</strong> {tx.unit_price}</div>
-                      <div><strong>Commissioni:</strong> {tx.commission}</div>
-                      <div><strong>Broker:</strong> {tx.broker || '-'}</div>
-                      <div><strong>Lungo/Breve:</strong> {tx.long_short || '-'}</div>
-                      <div><strong>Note:</strong> {tx.note || '-'}</div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Strumento</TableHead>
+                        <TableHead>Quantità</TableHead>
+                        <TableHead>Prezzo Unit.</TableHead>
+                        <TableHead>Commissioni</TableHead>
+                        <TableHead>Valuta</TableHead>
+                        <TableHead>Cambio</TableHead>
+                        <TableHead>Valore EUR</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.map(tx => (
+                        <TableRow key={tx.id}>
+                          <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{tx.type}</TableCell>
+                          <TableCell>{tx.instrument}</TableCell>
+                          <TableCell>{tx.quantity}</TableCell>
+                          <TableCell>{tx.unit_price?.toFixed(2)}</TableCell>
+                          <TableCell>{tx.commission?.toFixed(2)}</TableCell>
+                          <TableCell>{tx.currency}</TableCell>
+                          <TableCell>{tx.exchange_rate?.toFixed(4)}</TableCell>
+                          <TableCell>{tx.total_value_eur?.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
