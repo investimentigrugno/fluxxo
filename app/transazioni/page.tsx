@@ -33,33 +33,40 @@ export default function TransazioniPage() {
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-    }
-    getUser()
-  }, [supabase.auth])
+  const getUser = async () => {
+    const {  { user } } = await supabase.auth.getUser()
+    console.log('👤 Utente loggato:', user)
+    console.log('🆔 User ID:', user?.id)
+    setUser(user)
+  }
+  getUser()
+}, [supabase.auth])
+
 
   async function loadTransactions() {
-    setLoadingTransactions(true)
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('date', { ascending: false })
-      .limit(100)
+  console.log('🔄 Inizio caricamento transazioni...')
+  setLoadingTransactions(true)
+  
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .order('date', { ascending: false })
+    .limit(100)
 
-    if (error) {
-      alert('Errore caricamento: ' + error.message)
-      setTransactions([])
-    } else {
-      setTransactions(data ?? [])
-    }
-    setLoadingTransactions(false)
+  console.log('📦 Dati ricevuti:', data)
+  console.log('❌ Errore:', error)
+  console.log('📊 Numero transazioni:', data?.length ?? 0)
+
+  if (error) {
+    console.error('Errore completo:', error)
+    alert('Errore caricamento: ' + error.message)
+    setTransactions([])
+  } else {
+    console.log('✅ Transazioni caricate con successo')
+    setTransactions(data ?? [])
   }
-
-  useEffect(() => {
-    loadTransactions()
-  }, [])
+  setLoadingTransactions(false)
+}
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
