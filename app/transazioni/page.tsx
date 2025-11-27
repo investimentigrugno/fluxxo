@@ -149,18 +149,18 @@ export default function TransazioniPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Buy">Acquisto</SelectItem>
-                        <SelectItem value="Sell">Vendita</SelectItem>
-                        <SelectItem value="Deposit">Deposito</SelectItem>
-                        <SelectItem value="Withdraw">Prelievo</SelectItem>
-                        <SelectItem value="Dividend">Dividendo</SelectItem>
+                        <SelectItem value="Buy">Buy</SelectItem>
+                        <SelectItem value="Sell">Sell</SelectItem>
+                        <SelectItem value="Deposit">Deposit</SelectItem>
+                        <SelectItem value="Withdraw">Withdraw</SelectItem>
+                        <SelectItem value="Dividend">Dividend</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Strumento (Ticker)</label>
+                  <label className="block text-sm font-medium mb-1">Asset (Ticker)</label>
                   <Input
                     value={formData.instrument}
                     onChange={(e) => setFormData({ ...formData, instrument: e.target.value })}
@@ -183,7 +183,7 @@ export default function TransazioniPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Prezzo Unitario</label>
+                    <label className="block text-sm font-medium mb-1">PMC</label>
                     <Input
                       type="number"
                       step="0.01"
@@ -197,7 +197,7 @@ export default function TransazioniPage() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Commissioni</label>
+                    <label className="block text-sm font-medium mb-1">Commission</label>
                     <Input
                       type="number"
                       step="0.01"
@@ -207,7 +207,7 @@ export default function TransazioniPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Valuta</label>
+                    <label className="block text-sm font-medium mb-1">Currency</label>
                     <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v })} disabled={submitting}>
                       <SelectTrigger>
                         <SelectValue />
@@ -216,6 +216,18 @@ export default function TransazioniPage() {
                         <SelectItem value="EUR">EUR</SelectItem>
                         <SelectItem value="USD">USD</SelectItem>
                         <SelectItem value="GBP">GBP</SelectItem>
+                        <SelectItem value="CAD">CAD</SelectItem>
+                        <SelectItem value="AUD">AUD</SelectItem>
+                        <SelectItem value="CHF">CHF</SelectItem>
+                        <SelectItem value="JPY">JPY</SelectItem>
+                        <SelectItem value="CNY">CNY</SelectItem>
+                        <SelectItem value="HKD">HKD</SelectItem>
+                        <SelectItem value="NOK">NOK</SelectItem>
+                        <SelectItem value="SGD">SGD</SelectItem>
+                        <SelectItem value="SEK">SEK</SelectItem>
+                        <SelectItem value="NZD">NZD</SelectItem>
+                        <SelectItem value="AED">AED</SelectItem>
+                        <SelectItem value="INR">INR</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -233,7 +245,7 @@ export default function TransazioniPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Lungo/Breve</label>
+                    <label className="block text-sm font-medium mb-1">Horizon</label>
                     <Select value={formData.long_short} onValueChange={(v) => setFormData({ ...formData, long_short: v })} disabled={submitting}>
                       <SelectTrigger>
                         <SelectValue />
@@ -255,7 +267,7 @@ export default function TransazioniPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Note</label>
+                  <label className="block text-sm font-medium mb-1">Notes</label>
                   <Input
                     value={formData.note}
                     onChange={(e) => setFormData({ ...formData, note: e.target.value })}
@@ -264,7 +276,7 @@ export default function TransazioniPage() {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? 'Salvataggio...' : 'Salva Transazione'}
+                  {submitting ? 'Saving...' : 'Save transaction'}
                 </Button>
               </form>
             </CardContent>
@@ -275,23 +287,23 @@ export default function TransazioniPage() {
           <Card>
             <CardContent className="py-8">
               {loadingTransactions ? (
-                <p className="text-center text-gray-500">Caricamento...</p>
+                <p className="text-center text-gray-500">Loading...</p>
               ) : transactions.length === 0 ? (
-                <p className="text-center text-gray-500">Nessuna transazione</p>
+                <p className="text-center text-gray-500">No transaction found</p>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Strumento</TableHead>
-                        <TableHead>Quantità</TableHead>
-                        <TableHead>Prezzo Unit.</TableHead>
-                        <TableHead>Commissioni</TableHead>
-                        <TableHead>Valuta</TableHead>
-                        <TableHead>Cambio</TableHead>
-                        <TableHead>Valore EUR</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Asset</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>PMC</TableHead>
+                        <TableHead>Commission</TableHead>
+                        <TableHead>Currency</TableHead>
+                        <TableHead>Rate</TableHead>
+                        <TableHead>Tot.Amount EUR</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
