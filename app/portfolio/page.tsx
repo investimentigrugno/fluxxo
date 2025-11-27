@@ -19,69 +19,56 @@ export default function PortfolioPage() {
   }, [])
 
   async function fetchPrices(instruments: string[]) {
-  // ✅ SKIPPA ticker che NON funzionano con yfinance
+  // ✅ FILTRI MENO RESTRITTIVI - prova TUTTI tranne i 3 speciali
   const validInstruments = instruments.filter(instrument => 
-    !['BONDORA', 'BONDORA_CASH', 'BOT.FX'].includes(instrument) &&
-    !instrument.includes('MI.') &&  // Skip ETF italiani
-    !instrument.includes('AS.') &&  // Skip altri ETF
-    !instrument.includes('L.') &&   // Skip London
-    !instrument.endsWith('EUR')     // Skip crypto EUR pairs
+    !['BONDORA', 'BONDORA_CASH', 'BOT.FX'].includes(instrument)
   )
   
+  console.log('📊 ALL instruments:', instruments)
   console.log('📊 Valid instruments for yfinance:', validInstruments)
   
   if (validInstruments.length === 0) {
-    console.log('⏭️ Nessun ticker valido per yfinance')
     setLoadingPrices(false)
     return
   }
 
   setLoadingPrices(true)
-  try {
-    const priceData: Record<string, any> = {}
-    
-    // ✅ BATCH requests per velocità (max 5 alla volta)
-    const batches = []
-    for (let i = 0; i < validInstruments.length; i += 5) {
-      batches.push(validInstruments.slice(i, i + 5))
-    }
-    
-    for (const batch of batches) {
-      const promises = batch.map(async (instrument) => {
-        try {
-          const res = await fetch('/api/ticker/info', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ticker: instrument })
-          })
-          const data = await res.json()
-          if (data.error) {
-            console.warn(`⚠️ Errore prezzo ${instrument}:`, data.error)
-          } else {
-            console.log(`✅ ${instrument}: ${data.price} ${data.currency}`)
-            priceData[instrument] = {
-              price: data.price,
-              currency: data.currency,
-              name: data.name,      // ✅ Nome dalla tua API
-              sector: data.sector   // ✅ Settore dalla tua API
-            }
-          }
-        } catch (error) {
-          console.warn(`❌ Fetch fallito ${instrument}:`, error)
-        }
+  const priceData: Record<string, any> = {}
+  
+  // ✅ PROVA TUTTI i ticker validi (anche se alcuni falliscono)
+  for (const instrument of validInstruments) {
+    try {
+      const res = await fetch('/api/ticker/info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker: instrument })
       })
       
-      await Promise.all(promises)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.error) {
+          console.warn(`⚠️ ${instrument}:`, data.error)
+        } else {
+          console.log(`✅ ${instrument}: ${data.price} ${data.currency}`)
+          priceData[instrument] = {
+            price: data.price,
+            currency: data.currency,
+            name: data.name,
+            sector: data.sector
+          }
+        }
+      } else {
+        console.warn(`⚠️ HTTP ${res.status} ${instrument}`)
+      }
+    } catch (error) {
+      console.warn(`❌ Fetch fallito ${instrument}:`, error)
     }
-    
-    setPrices(priceData)
-  } catch (error) {
-    console.error('❌ Errore fetch prezzi:', error)
-  } finally {
-    setLoadingPrices(false)
   }
+  
+  console.log('💰 Prezzi caricati:', Object.keys(priceData))
+  setPrices(priceData)
+  setLoadingPrices(false)
 }
-
 
 
   async function loadPortfolio() {
