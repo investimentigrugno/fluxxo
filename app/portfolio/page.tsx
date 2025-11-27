@@ -30,35 +30,59 @@ export default function PortfolioPage() {
   } else {
     const grouped: any = {}
     
+    // Strumenti speciali che usano unit_price invece di quantity
+    const specialInstruments = ['BONDORA', 'BONDORA_CASH', 'BOT.FX']
+    
     ;(data ?? []).forEach((tx: any) => {
       const key = tx.instrument
+      const isSpecial = specialInstruments.includes(tx.instrument)
+      
       if (!grouped[key]) {
         grouped[key] = {
           instrument: tx.instrument,
           currency: tx.currency,
           quantity: 0,
           totalCost: 0,
-          transactions: []
+          transactions: [],
+          isSpecial: isSpecial
         }
       }
       
-      if (tx.type === 'Buy') {
-        grouped[key].quantity += parseFloat(tx.quantity)
-        grouped[key].totalCost += parseFloat(tx.quantity) * parseFloat(tx.unit_price)
-      } else if (tx.type === 'Sell') {
-        grouped[key].quantity -= parseFloat(tx.quantity)
-        grouped[key].totalCost -= parseFloat(tx.quantity) * parseFloat(tx.unit_price)
+      if (isSpecial) {
+        // Per BONDORA, BONDORA_CASH, BOT.FX: usa unit_price
+        if (tx.type === 'Buy') {
+          grouped[key].quantity += parseFloat(tx.unit_price || 0)
+          grouped[key].totalCost += parseFloat(tx.unit_price || 0)
+        } else if (tx.type === 'Sell') {
+          grouped[key].quantity -= parseFloat(tx.unit_price || 0)
+          grouped[key].totalCost -= parseFloat(tx.unit_price || 0)
+        }
+      } else {
+        // Per tutti gli altri: usa quantity normale
+        if (tx.type === 'Buy') {
+          grouped[key].quantity += parseFloat(tx.quantity)
+          grouped[key].totalCost += parseFloat(tx.quantity) * parseFloat(tx.unit_price)
+        } else if (tx.type === 'Sell') {
+          grouped[key].quantity -= parseFloat(tx.quantity)
+          grouped[key].totalCost -= parseFloat(tx.quantity) * parseFloat(tx.unit_price)
+        }
       }
+      
       grouped[key].transactions.push(tx)
     })
 
-    // ✅ FILTRO: Solo posizioni con quantità != 0
-    const portfolio = Object.values(grouped).filter((p: any) => Math.abs(p.quantity) > 0.0001)
+    // ✅ FILTRO: mostra solo posizioni con quantità > 0
+    const portfolio = Object.values(grouped).filter((p: any) => p.quantity > 0.00000001)
     setPortfolio(portfolio as any[])
 
     const totalValue = portfolio.reduce((sum: number, p: any) => {
-      const avgPrice = p.totalCost / p.quantity
-      return sum + (p.quantity * avgPrice)
+      if (p.isSpecial) {
+        // Per strumenti speciali il valore è direttamente quantity
+        return sum + p.quantity
+      } else {
+        const avgCost = p.totalCost / p.quantity
+        return sum + (p.quantity * avgCost)
+      }
     }, 0)
     
     const totalCost = portfolio.reduce((sum: number, p: any) => sum + p.totalCost, 0)
@@ -71,6 +95,7 @@ export default function PortfolioPage() {
   }
   setLoading(false)
 }
+
 
   return (
     <AuthWrapper>
