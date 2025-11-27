@@ -45,53 +45,67 @@ export default function PortfolioPage() {
         currentQuantity: 0,
         avgCost: 0,
         totalValue: 0,
-        remainingLots: [],
-        transactions: [],
-        isSpecial
+        remainingLots: [], // SOLO lotti NON venduti
+        transactions: []
       }
     }
 
     grouped[key].transactions.push(tx)
 
     if (isSpecial) {
+      // LOGICA SEMPLICE per BONDORA etc.
       const unitPrice = parseFloat(tx.unit_price || '0')
       if (tx.type === 'Buy') {
         grouped[key].currentQuantity += unitPrice
       } else if (tx.type === 'Sell') {
         grouped[key].currentQuantity -= unitPrice
       }
-      grouped[key].avgCost = grouped[key].currentQuantity > 0 ? unitPrice : 0
+      grouped[key].avgCost = unitPrice // Ultimo prezzo per speciali
       grouped[key].totalValue = grouped[key].currentQuantity * grouped[key].avgCost
     } else {
-      const quantity = parseFloat(tx.quantity || '0')
-      const unitPrice = parseFloat(tx.unit_price || '0')
-      
+      // ✅ LOGICA FIFO CORRETTA
+      const qty = parseFloat(tx.quantity || '0')
+      const price = parseFloat(tx.unit_price || '0')
+
       if (tx.type === 'Buy') {
-        grouped[key].remainingLots.push({ quantity, unitPrice })
-      } else if (tx.type === 'Sell' && quantity > 0) {
-        let qtyToSell = quantity
-        while (qtyToSell > 0 && grouped[key].remainingLots.length > 0) {
+        // AGGIUNGI LOTTO NUOVO
+        grouped[key].remainingLots.push({ 
+          quantity: qty, 
+          unitPrice: price,
+          date: tx.date 
+        })
+      } else if (tx.type === 'Sell' && qty > 0 && grouped[key].remainingLots.length > 0) {
+        // CONSUMA LOTTI PIÙ VECCHI (FIFO)
+        let remainingQty = qty
+        while (remainingQty > 0 && grouped[key].remainingLots.length > 0) {
           const lot = grouped[key].remainingLots[0]
-          if (lot.quantity <= qtyToSell) {
-            qtyToSell -= lot.quantity
+          if (lot.quantity <= remainingQty) {
+            // CONSUMA LOTTO COMPLETO
+            remainingQty -= lot.quantity
             grouped[key].remainingLots.shift()
           } else {
-            lot.quantity -= qtyToSell
-            qtyToSell = 0
+            // CONSUMA PARZIALMENTE
+            lot.quantity -= remainingQty
+            remainingQty = 0
           }
         }
       }
 
+      // CALCOLA POSIZIONE ATTUALE DAI LOTTI RIMANENTI
       grouped[key].currentQuantity = grouped[key].remainingLots.reduce(
         (sum: number, lot: any) => sum + lot.quantity, 0
       )
 
       if (grouped[key].currentQuantity > 0) {
+        // COSTO MEDIO = PESO DEI LOTTI RIMANENTI
         const totalCost = grouped[key].remainingLots.reduce(
           (sum: number, lot: any) => sum + (lot.quantity * lot.unitPrice), 0
         )
         grouped[key].avgCost = totalCost / grouped[key].currentQuantity
         grouped[key].totalValue = grouped[key].currentQuantity * grouped[key].avgCost
+      } else {
+        grouped[key].avgCost = 0
+        grouped[key].totalValue = 0
       }
     }
   })
@@ -101,12 +115,8 @@ export default function PortfolioPage() {
   )
   setPortfolio(portfolio)
 
-  const totalValue = portfolio.reduce((sum: number, p: any) => 
-    sum + (p.totalValue || 0), 0
-  )
-  const totalCost = portfolio.reduce((sum: number, p: any) => 
-    sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0
-  )
+  const totalValue = portfolio.reduce((sum: number, p: any) => sum + (p.totalValue || 0), 0)
+  const totalCost = portfolio.reduce((sum: number, p: any) => sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0)
 
   setTotals({
     value: totalValue,
@@ -116,8 +126,6 @@ export default function PortfolioPage() {
 
   setLoading(false)
 }
-
-
 
   return (
     <AuthWrapper>
@@ -163,12 +171,14 @@ export default function PortfolioPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Strumento</TableHead>
-                      <TableHead>Quantità</TableHead>
-                      <TableHead>Costo Medio</TableHead>
-                      <TableHead>Valore Totale</TableHead>
+                      <TableHead>Asset</TableHead>
+                      <TableHead>Qty</TableHead>
+                      <TableHead>PMC</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Currency</TableHead>
                       <TableHead>P&L</TableHead>
                       <TableHead>P&L %</TableHead>
+                      <TableHead>Total Value €</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
