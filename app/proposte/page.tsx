@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2 } from 'lucide-react'
 
 export default function PropostePage() {
-
   const [proposals, setProposals] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -31,7 +30,7 @@ export default function PropostePage() {
   })
 
   async function getPortfolioValueEUR(): Promise<number> {
-    // Sostituisci con valore reale calcolato dinamicamente
+    // Sostituire con valore reale calcolato dinamicamente dal DB
     return 100000.0
   }
 
@@ -182,65 +181,132 @@ export default function PropostePage() {
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">💡 Proposte</h1>
 
-      <Tabs defaultValue="visualizza" onValueChange={(val) => { if (val === 'visualizza') loadProposals() }}>
+      <Tabs defaultValue="visualizza" onValueChange={(val) => val === 'visualizza' && loadProposals()}>
         <TabsList>
           <TabsTrigger value="visualizza">Visualizza</TabsTrigger>
           <TabsTrigger value="aggiungi">Aggiungi Proposta</TabsTrigger>
         </TabsList>
         <TabsContent value="visualizza">
-          {/* Visualizza lista proposte */}
-          <div className="space-y-4">
-            {loading ? (
-              <p>Caricamento...</p>
-            ) : (
-              proposals.map(proposal => (
-                <div key={proposal.id} className="border p-4 rounded shadow">
-                  <h2 className="text-xl font-bold">{proposal.asset} - {proposal.type}</h2>
-                  <p>Entry Price: {proposal.entry_price?.toFixed(2)} {proposal.currency}</p>
-                  <p>Quantity: {proposal.quantity}</p>
-                  <p>Percent Liquidity: {proposal.percent_liquidity?.toFixed(2) ?? 'N/A'}%</p>
-                  <p>Status: {proposal.status}</p>
-                  <p>Motivation: {proposal.motivation}</p>
+          {loading ? (
+            <div className="text-center py-12 text-gray-600">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+              Loading proposals...
+            </div>
+          ) : proposals.length === 0 ? (
+            <p className="text-gray-500">No proposals found</p>
+          ) : (
+            <div className="space-y-4">
+              {proposals.map((prop) => (
+                <div key={prop.id} className="border rounded-lg p-4 shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-lg">{prop.asset} - {prop.type}</h3>
+                      <p className="text-sm text-gray-600">{new Date(prop.created_at).toLocaleString()}</p>
+                    </div>
+                  <span className="inline-block bg-gray-200 rounded px-2 py-1 text-xs font-semibold">
+                      {prop.status}
+                  </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Entry Price</p>
+                      <p className="font-semibold">{prop.entry_price.toFixed(2)} {prop.currency}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Quantity</p>
+                      <p className="font-semibold">{prop.quantity}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Percent Liquidity</p>
+                      <p className="font-semibold">{prop.percent_liquidity?.toFixed(2) ?? 'N/A'}%</p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-600">Motivation:</p>
+                    <p>{prop.motivation || '-'}</p>
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="aggiungi">
-          {/* Form inserimento proposta */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            <label className="block text-sm font-medium mb-1">Asset (Ticker)</label>
             <Input
-              label="Asset (Ticker)"
               value={formData.asset}
               onChange={e => setFormData({ ...formData, asset: e.target.value })}
               onBlur={() => handleTickerChange(formData.asset)}
               placeholder="Es: AAPL, ISP.MI"
               required
             />
-            <Input label="Entry Price" type="number" step="0.01" value={formData.entry_price} onChange={e => setFormData({ ...formData, entry_price: e.target.value })} required />
-            <Input label="Quantity" type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} required />
-            <Input label="Percent Liquidity" type="number" step="0.01" value={formData.percent_liquidity} disabled />
-            <Select label="Currency" value={formData.currency} onValueChange={v => setFormData({ ...formData, currency: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EUR">EUR</SelectItem>
-                <SelectItem value="USD">USD</SelectItem>
-                <SelectItem value="GBP">GBP</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input label="Exchange Rate" type="number" step="0.0001" value={formData.getExchangeRate} disabled />
-            <Input label="Take Profit" type="number" step="0.01" value={formData.take_profit} onChange={e => setFormData({ ...formData, take_profit: e.target.value })} />
-            <Input label="Stop Loss" type="number" step="0.01" value={formData.stop_loss} onChange={e => setFormData({ ...formData, stop_loss: e.target.value })} />
-            <Input label="Target Date" type="date" value={formData.target_date} onChange={e => setFormData({ ...formData, target_date: e.target.value })} />
-            <label className="block text-sm font-medium mb-1">Motivation</label>
+            <label className="block text-sm font-medium mb-1">Entry Price</label>
+            <Input
+              type="number"
+              step="0.01"
+              value={formData.entry_price}
+              onChange={e => setFormData({ ...formData, entry_price: e.target.value })}
+              required
+            />
+            <label className="block text-sm font-medium mb-1">Quantity</label>
+            <Input
+              type="number"
+              value={formData.quantity}
+              onChange={e => setFormData({ ...formData, quantity: e.target.value })}
+              required
+            />
+            <label className="block text-sm font-medium mb-1">Percent Liquidity</label>
+            <Input
+              type="number"
+              step="0.01"
+              value={formData.percent_liquidity}
+              readOnly
+              placeholder="Auto-calculated"
+            />
+            <label className="block text-sm font-medium mb-1">Currency</label>
+            <Input
+              value={formData.currency}
+              readOnly
+            />
+            <label className="block text-sm font-medium mb-1">Exchange Rate</label>
+            <Input
+              type="number"
+              step="0.0001"
+              value={formData.getExchangeRate}
+              readOnly
+              placeholder="Auto-calculated"
+            />
+            <label className="block text-sm font-medium mb-1">Take Profit (optional)</label>
+            <Input
+              type="number"
+              step="0.01"
+              value={formData.take_profit}
+              onChange={e => setFormData({ ...formData, take_profit: e.target.value })}
+            />
+            <label className="block text-sm font-medium mb-1">Stop Loss (optional)</label>
+            <Input
+              type="number"
+              step="0.01"
+              value={formData.stop_loss}
+              onChange={e => setFormData({ ...formData, stop_loss: e.target.value })}
+            />
+            <label className="block text-sm font-medium mb-1">Target Date (optional)</label>
+            <Input
+              type="date"
+              value={formData.target_date}
+              onChange={e => setFormData({ ...formData, target_date: e.target.value })}
+            />
+            <label className="block text-sm font-medium mb-1">Motivation (optional)</label>
             <textarea
-              value={formData.motivation}
-              onChange={e => setFormData({ ...formData, motivation: e.target.value })}
               className="w-full p-2 border rounded"
               rows={4}
+              value={formData.motivation}
+              onChange={e => setFormData({ ...formData, motivation: e.target.value })}
               placeholder="Explain your reasons..."
             />
-            <Button type="submit" disabled={submitting} className="w-full">Submit Proposal</Button>
+            <Button type="submit" disabled={submitting} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              {submitting ? 'Submitting...' : 'Submit Proposal'}
+            </Button>
           </form>
         </TabsContent>
       </Tabs>
