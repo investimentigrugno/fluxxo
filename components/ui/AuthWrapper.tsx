@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Auth, ThemeSupa } from '@supabase/auth-ui-react'
+import { Auth} from '@supabase/auth-ui-react'
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const supabase = createClientComponentClient()
@@ -34,7 +34,6 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       <div className="min-h-screen flex justify-center items-center">
         <Auth
           supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }}
           providers={[]}
         />
       </div>
