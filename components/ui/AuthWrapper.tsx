@@ -3,7 +3,11 @@
 import { useState, useEffect, ReactNode } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-export default function AuthWrapper({ children }: { children: ReactNode }) {
+type Props = {
+  children: ReactNode
+}
+
+export default function AuthWrapper({ children }: Props) {
   const supabase = createClientComponentClient()
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -11,23 +15,30 @@ export default function AuthWrapper({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState('')
 
   useEffect(() => {
-    supabase.auth.getSession().then(({{ session }}) => {
-      setSession(session)
+    const loadSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      setSession(data.session ?? null)
+      setLoading(false)
+    }
+
+    loadSession()
+
+    const { data } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession)
       setLoading(false)
     })
 
-    const {  { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      data.subscription.unsubscribe()
+    }
+  }, [supabase])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) alert('Errore login: ' + error.message)
+    if (error) {
+      alert('Errore login: ' + error.message)
+    }
   }
 
   if (loading) {
