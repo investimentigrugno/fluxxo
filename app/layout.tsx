@@ -37,7 +37,7 @@ export default function RootLayout({
               <div className="hidden md:flex items-center space-x-1">
                 <Link href="/portfolio">
                   <Button variant="ghost" className="font-medium">
-                    🏠 Home
+                    🏠 Portfolio
                   </Button>
                 </Link>
                 <Link href="/screener">

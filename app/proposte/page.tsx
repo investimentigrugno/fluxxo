@@ -266,6 +266,7 @@ export default function PropostePage() {
               required
             />
             <div className="grid grid-cols-2 gap-4">
+              <div>
               <label className="block text-sm font-medium mb-1">Total Amount EUR</label>
               <Input
                 type="number"
@@ -282,8 +283,10 @@ export default function PropostePage() {
                 readOnly
                 placeholder="Auto-calculated"
               />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
+              <div>
               <label className="block text-sm font-medium mb-1">Currency</label>
               <Input
                 value={formData.currency}
@@ -297,8 +300,10 @@ export default function PropostePage() {
                 readOnly
                 placeholder="Auto-calculated"
               />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
+              <div>
               <label className="block text-sm font-medium mb-1">Take Profit (optional)</label>
               <Input
                 type="number"
@@ -313,6 +318,7 @@ export default function PropostePage() {
                 value={formData.stop_loss}
                 onChange={e => setFormData({ ...formData, stop_loss: e.target.value })}
               />
+              </div>
             </div>
             <label className="block text-sm font-medium mb-1">Target Date (optional)</label>
             <Input
