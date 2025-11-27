@@ -232,13 +232,23 @@ export default function PropostePage() {
         </TabsContent>
         <TabsContent value="aggiungi">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="block text-sm font-medium mb-1">Asset (Ticker)</label>
+            <label className="block text-sm font-medium mb-1">Ticker</label>
             <Input
               value={formData.asset}
               onChange={e => setFormData({ ...formData, asset: e.target.value })}
               onBlur={() => handleTickerChange(formData.asset)}
               placeholder="Es: AAPL, ISP.MI"
               required
+            />
+            <label className="block text-sm font-medium mb-1">Name</label>
+            <Input
+              value={formData.name}
+              readOnly
+            />
+            <label className="block text-sm font-medium mb-1">Industry</label>
+            <Input
+              value={formData.sector}
+              readOnly
             />
             <label className="block text-sm font-medium mb-1">Entry Price</label>
             <Input
