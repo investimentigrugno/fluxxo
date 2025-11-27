@@ -9,111 +9,174 @@ import AuthWrapper from '@/components/ui/AuthWrapper'
 export default function PortfolioPage() {
   const supabase = createClientComponentClient()
   const [portfolio, setPortfolio] = useState<any[]>([])
+  const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
   const [loading, setLoading] = useState(true)
+  const [loadingPrices, setLoadingPrices] = useState(false)
   const [totals, setTotals] = useState({ value: 0, pnl: 0, pnlPercent: 0 })
 
   useEffect(() => {
     loadPortfolio()
   }, [])
 
-  async function loadPortfolio() {
-  setLoading(true)
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .order('date', { ascending: true })
-
-  if (error) {
-    console.error('Errore:', error)
-    alert('Errore caricamento portfolio')
-    setPortfolio([])
-    setLoading(false)
-    return
+  async function fetchPrices(instruments: string[]) {
+    setLoadingPrices(true)
+    try {
+      const priceData: Record<string, any> = {}
+      
+      for (const instrument of instruments) {
+        try {
+          const res = await fetch('/api/ticker/info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticker: instrument })
+          })
+          const data = await res.json()
+          if (data.error) {
+            console.warn(`Errore prezzo ${instrument}:`, data.error)
+          } else {
+            priceData[instrument] = {
+              price: data.price,
+              currency: data.currency || 'USD'
+            }
+          }
+        } catch (error) {
+          console.warn(`Errore fetch ${instrument}:`, error)
+        }
+      }
+      
+      setPrices(priceData)
+    } catch (error) {
+      console.error('Errore fetch prezzi:', error)
+    } finally {
+      setLoadingPrices(false)
+    }
   }
 
-  const specialInstruments = ['BONDORA', 'BONDORA_CASH', 'BOT.FX']
-  const grouped = {} as any
+  async function loadPortfolio() {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .order('date', { ascending: true })
 
-  (data ?? []).forEach((tx: any) => {
-    const key = tx.instrument
-    const isSpecial = specialInstruments.includes(key)
-
-    if (!grouped[key]) {
-      grouped[key] = {
-        instrument: key,
-        currency: tx.currency || 'EUR',
-        currentQuantity: 0,
-        avgCost: 0,
-        totalValue: 0,
-        remainingLots: [],
-        transactions: []
-      }
+    if (error) {
+      console.error('Errore:', error)
+      alert('Errore caricamento portfolio')
+      setPortfolio([])
+      setLoading(false)
+      return
     }
 
-    grouped[key].transactions.push(tx)
+    const specialInstruments = ['BONDORA', 'BONDORA_CASH', 'BOT.FX']
+    const grouped = {} as any
 
-    if (isSpecial) {
-      // Calcola somma buy e sell di unit_price
-      grouped[key].sumBuy = (grouped[key].sumBuy || 0) + (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
-      grouped[key].sumSell = (grouped[key].sumSell || 0) + (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
-    } else {
-      const quantity = parseFloat(tx.quantity || '0')
-      const unitPrice = parseFloat(tx.unit_price || '0')
-      
-      if (tx.type === 'Buy') {
-        grouped[key].remainingLots.push({ quantity, unitPrice })
-      } else if (tx.type === 'Sell' && quantity > 0) {
-        let qtyToSell = quantity
-        while (qtyToSell > 0 && grouped[key].remainingLots.length > 0) {
-          const lot = grouped[key].remainingLots[0]
-          if (lot.quantity <= qtyToSell) {
-            qtyToSell -= lot.quantity
-            grouped[key].remainingLots.shift()
-          } else {
-            lot.quantity -= qtyToSell
-            qtyToSell = 0
+    (data ?? []).forEach((tx: any) => {
+      const key = tx.instrument
+      const isSpecial = specialInstruments.includes(key)
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          instrument: key,
+          currency: tx.currency || 'EUR',
+          currentQuantity: 0,
+          avgCost: 0,
+          totalValue: 0,
+          remainingLots: [],
+          transactions: [],
+          sumBuy: 0,
+          sumSell: 0
+        }
+      }
+
+      grouped[key].transactions.push(tx)
+
+      if (isSpecial) {
+        grouped[key].sumBuy += (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
+        grouped[key].sumSell += (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
+      } else {
+        const quantity = parseFloat(tx.quantity || '0')
+        const unitPrice = parseFloat(tx.unit_price || '0')
+        
+        if (tx.type === 'Buy') {
+          grouped[key].remainingLots.push({ quantity, unitPrice })
+        } else if (tx.type === 'Sell' && quantity > 0) {
+          let qtyToSell = quantity
+          while (qtyToSell > 0 && grouped[key].remainingLots.length > 0) {
+            const lot = grouped[key].remainingLots[0]
+            if (lot.quantity <= qtyToSell) {
+              qtyToSell -= lot.quantity
+              grouped[key].remainingLots.shift()
+            } else {
+              lot.quantity -= qtyToSell
+              qtyToSell = 0
+            }
           }
         }
       }
-    }
-  })
+    })
 
-  // Ora calcola quantità, costo medio, valore per special e normali
-  Object.values(grouped).forEach((pos: any) => {
-    if (specialInstruments.includes(pos.instrument)) {
-      const netCost = (pos.sumBuy || 0) - (pos.sumSell || 0)
-      // Per special instruments quantità = 1 se c’è valore net positivo, 0 altrimenti
-      pos.currentQuantity = netCost > 0 ? 1 : 0
-      pos.avgCost = Math.abs(netCost)
-      pos.totalValue = pos.currentQuantity * pos.avgCost
-    } else {
-      pos.currentQuantity = pos.remainingLots.reduce((sum: number, lot: any) => sum + lot.quantity, 0)
-      if (pos.currentQuantity > 0) {
-        const totalCost = pos.remainingLots.reduce((sum: number, lot: any) => sum + (lot.quantity * lot.unitPrice), 0)
-        pos.avgCost = totalCost / pos.currentQuantity
+    // Calcola quantità, costo medio, valore per special e normali
+    Object.values(grouped).forEach((pos: any) => {
+      if (specialInstruments.includes(pos.instrument)) {
+        const netCost = pos.sumBuy - pos.sumSell
+        pos.currentQuantity = netCost > 0 ? 1 : 0
+        pos.avgCost = Math.abs(netCost)
         pos.totalValue = pos.currentQuantity * pos.avgCost
       } else {
-        pos.avgCost = 0
-        pos.totalValue = 0
+        pos.currentQuantity = pos.remainingLots.reduce((sum: number, lot: any) => sum + lot.quantity, 0)
+        if (pos.currentQuantity > 0) {
+          const totalCost = pos.remainingLots.reduce((sum: number, lot: any) => sum + (lot.quantity * lot.unitPrice), 0)
+          pos.avgCost = totalCost / pos.currentQuantity
+          pos.totalValue = pos.currentQuantity * pos.avgCost
+        } else {
+          pos.avgCost = 0
+          pos.totalValue = 0
+        }
       }
+    })
+
+    const portfolio = Object.values(grouped).filter((p: any) => (p.currentQuantity || 0) > 0.00000001) as any[]
+    setPortfolio(portfolio)
+
+    // Fetch prezzi correnti
+    const instruments = portfolio.map((p: any) => p.instrument)
+    if (instruments.length > 0) {
+      fetchPrices(instruments)
     }
-  })
 
-  const portfolio = Object.values(grouped).filter((p: any) => (p.currentQuantity || 0) > 0.00000001) as any[]
-  setPortfolio(portfolio)
+    // Totali basati su costo medio (prima dei prezzi correnti)
+    const totalValue = portfolio.reduce((sum: number, p: any) => sum + (p.totalValue || 0), 0)
+    const totalCost = portfolio.reduce((sum: number, p: any) => sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0)
 
-  const totalValue = portfolio.reduce((sum: number, p: any) => sum + (p.totalValue || 0), 0)
-  const totalCost = portfolio.reduce((sum: number, p: any) => sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0)
+    setTotals({
+      value: totalValue,
+      pnl: totalValue - totalCost,
+      pnlPercent: totalCost !== 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0
+    })
 
-  setTotals({
-    value: totalValue,
-    pnl: totalValue - totalCost,
-    pnlPercent: totalCost !== 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0
-  })
+    setLoading(false)
+  }
 
-  setLoading(false)
-}
+  // Aggiorna totali quando arrivano i prezzi correnti
+  useEffect(() => {
+    if (Object.keys(prices).length > 0 && portfolio.length > 0) {
+      const totalValueCurrent = portfolio.reduce((sum: number, p: any) => {
+        const priceData = prices[p.instrument]
+        const currentPrice = priceData?.price || p.avgCost || 0
+        return sum + ((p.currentQuantity || 0) * currentPrice)
+      }, 0)
+      
+      const totalCost = portfolio.reduce((sum: number, p: any) => 
+        sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0
+      )
 
+      setTotals({
+        value: totalValueCurrent,
+        pnl: totalValueCurrent - totalCost,
+        pnlPercent: totalCost !== 0 ? ((totalValueCurrent - totalCost) / totalCost) * 100 : 0
+      })
+    }
+  }, [prices, portfolio])
 
   return (
     <AuthWrapper>
@@ -147,7 +210,7 @@ export default function PortfolioPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Posizioni Aperte</CardTitle>
+            <CardTitle>Posizioni Aperte {loadingPrices && '(Prezzi in caricamento...)'}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -173,9 +236,13 @@ export default function PortfolioPage() {
                     {portfolio.map((pos: any) => {
                       const qty = Number(pos.currentQuantity) || 0
                       const avgCost = Number(pos.avgCost) || 0
-                      const totalValue = Number(pos.totalValue) || 0
+                      const priceData = prices[pos.instrument]
+                      const currentPrice = priceData?.price || avgCost
+                      const currentCurrency = priceData?.currency || pos.currency || 'EUR'
+                      
                       const totalCostValue = qty * avgCost
-                      const pnl = totalValue - totalCostValue
+                      const totalValueCurrent = qty * currentPrice
+                      const pnl = totalValueCurrent - totalCostValue
                       const pnlPercent = totalCostValue !== 0 ? (pnl / totalCostValue) * 100 : 0
 
                       return (
@@ -183,13 +250,21 @@ export default function PortfolioPage() {
                           <TableCell className="font-bold">{pos.instrument}</TableCell>
                           <TableCell>{qty.toFixed(4)}</TableCell>
                           <TableCell>€ {avgCost.toFixed(2)}</TableCell>
-                          <TableCell>€ {totalValue.toFixed(2)}</TableCell>
+                          <TableCell>
+                            {priceData ? (
+                              `${currentPrice.toFixed(2)} ${currentCurrency}`
+                            ) : (
+                              <span className="text-gray-400 italic">Caricando...</span>
+                            )}
+                          </TableCell>
+                          <TableCell>{currentCurrency}</TableCell>
                           <TableCell className={pnl >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                             € {pnl.toFixed(2)}
                           </TableCell>
                           <TableCell className={pnlPercent >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                             {pnlPercent.toFixed(2)}%
                           </TableCell>
+                          <TableCell>€ {totalValueCurrent.toFixed(2)}</TableCell>
                         </TableRow>
                       )
                     })}
