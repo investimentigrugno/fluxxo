@@ -11,7 +11,7 @@ export default function AuthWrapper({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState('')
 
   useEffect(() => {
-    supabase.auth.getSession().then(({  { session } }) => {
+    supabase.auth.getSession().then(({  { session } }) => {  // ✅ CORRETTA QUESTA RIGA
       setSession(session)
       setLoading(false)
     })
