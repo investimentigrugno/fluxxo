@@ -1,18 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Loader2 } from 'lucide-react'
 
 export default function PropostePage() {
-  const supabase = createClientComponentClient()
 
+  const [proposals, setProposals] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     asset: '',
     name: '',
@@ -24,38 +25,92 @@ export default function PropostePage() {
     take_profit: '',
     stop_loss: '',
     currency: 'EUR',
+    getExchangeRate: '',
     target_date: '',
-    motivation: '',
-    exchange_rate: '1'
+    motivation: ''
   })
 
-  const [proposals, setProposals] = useState<any[]>([])
-  const [loadingProposals, setLoadingProposals] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  async function getPortfolioValueEUR(): Promise<number> {
+    // Sostituisci con valore reale calcolato dinamicamente
+    return 100000.0
+  }
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
+  async function fetchTickerInfo(ticker: string) {
+    if (!ticker) return
+
+    try {
+      const res = await fetch('/api/ticker/info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker })
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+
+      setFormData(prev => ({
+        ...prev,
+        entry_price: data.price.toFixed(2),
+        currency: data.currency,
+        sector: data.sector,
+        name: data.name
+      }))
+
+      return data.currency
+    } catch (error: any) {
+      alert('Errore recupero info ticker: ' + error.message)
+      return null
     }
-    getUser()
-  }, [supabase.auth])
+  }
+
+  async function getExchangeRate(fromCurrency: string, toCurrency = 'EUR') {
+    if (fromCurrency === toCurrency) return 1.0
+    try {
+      const res = await fetch(`https://api.frankfurter.app/latest?from=${fromCurrency}&to=${toCurrency}`)
+      const data = await res.json()
+      return data.rates[toCurrency] ?? 1.0
+    } catch (error) {
+      console.error('Frankfurter error:', error)
+      return 1.0
+    }
+  }
+
+  async function calculatePercentLiquidity(entryPrice: number, quantity: number, currency: string) {
+    const portfolioEURValue = await getPortfolioValueEUR()
+    const rate = await getExchangeRate(currency, 'EUR')
+    const totalValueEUR = entryPrice * quantity * rate
+    return (totalValueEUR / portfolioEURValue) * 100
+  }
+
+  async function handleTickerChange(ticker: string) {
+    if (!ticker) return
+
+    const currency = await fetchTickerInfo(ticker)
+    if (!currency) return
+
+    const ep = parseFloat(formData.entry_price)
+    const qty = parseInt(formData.quantity)
+    const rate = await getExchangeRate(currency, 'EUR')
+
+    if (isNaN(ep) || isNaN(qty)) {
+      setFormData(prev => ({ ...prev, percent_liquidity: '', getExchangeRate: rate.toFixed(4) }))
+      return
+    }
+
+    const percent = await calculatePercentLiquidity(ep, qty, currency)
+    setFormData(prev => ({ ...prev, percent_liquidity: percent.toFixed(2), getExchangeRate: rate.toFixed(4) }))
+  }
 
   async function loadProposals() {
-    setLoadingProposals(true)
-    const { data, error } = await supabase
-      .from('proposals')
-      .select('*')
-      .order('created_at', { ascending: false })
-
+    setLoading(true)
+    const { data, error } = await supabase.from('proposals').select('*').order('created_at', { ascending: false })
     if (error) {
-      alert('Errore: ' + error.message)
-      setProposals([])
-    } else {
-      setProposals(data ?? [])
+      alert('Errore nel caricamento delle proposte')
+      console.error(error)
+      setLoading(false)
+      return
     }
-    setLoadingProposals(false)
+    setProposals(data || [])
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -66,284 +121,127 @@ export default function PropostePage() {
     e.preventDefault()
     setSubmitting(true)
 
-    try {
-      const { error } = await supabase
-        .from('proposals')
-        .insert([{
-          asset: formData.asset.toUpperCase(),
-          name: formData.name,
-          sector: formData.sector,
-          type: formData.type,
-          entry_price: parseFloat(formData.entry_price),
-          quantity: parseInt(formData.quantity),
-          percent_liquidity: parseFloat(formData.percent_liquidity),
-          take_profit: formData.take_profit ? parseFloat(formData.take_profit) : null,
-          stop_loss: formData.stop_loss ? parseFloat(formData.stop_loss) : null,
-          currency: formData.currency,
-          target_date: formData.target_date,
-          motivation: formData.motivation,
-          exchange_rate: parseFloat(formData.exchange_rate),
-          user_id: user?.id || null,
-          status: 'pending',
-          votes_approve: 0,
-          votes_reject: 0,
-          votes_required: 3,
-          created_at: new Date().toISOString()
-        }])
-
-      if (error) {
-        alert('Errore: ' + error.message)
-      } else {
-        alert('✅ Proposta creata!')
-        setFormData({
-          asset: '',
-          name: '',
-          sector: '',
-          type: 'BUY',
-          entry_price: '',
-          quantity: '',
-          percent_liquidity: '',
-          take_profit: '',
-          stop_loss: '',
-          currency: 'EUR',
-          target_date: '',
-          motivation: '',
-          exchange_rate: '1'
-        })
-        await loadProposals()
-      }
-    } catch (error: any) {
-      alert('Errore: ' + error.message)
-    } finally {
+    if (!formData.asset || !formData.entry_price || !formData.quantity) {
+      alert('Compila tutti i campi obbligatori')
       setSubmitting(false)
+      return
     }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+    if (userError || !userData.user) {
+      alert('Utente non autenticato')
+      setSubmitting(false)
+      return
+    }
+
+    const newProposal = {
+      created_at: new Date().toISOString(),
+      asset: formData.asset,
+      type: formData.type,
+      entry_price: parseFloat(formData.entry_price),
+      quantity: parseInt(formData.quantity),
+      percent_liquidity: formData.percent_liquidity ? parseFloat(formData.percent_liquidity) : null,
+      take_profit: formData.take_profit ? parseFloat(formData.take_profit) : null,
+      stop_loss: formData.stop_loss ? parseFloat(formData.stop_loss) : null,
+      currency: formData.currency,
+      target_date: formData.target_date || null,
+      motivation: formData.motivation || null,
+      status: 'pending',
+      user_id: userData.user.id,
+      exchange_rate: parseFloat(formData.getExchangeRate)
+    }
+
+    const { error } = await supabase.from('proposals').insert([newProposal])
+
+    if (error) {
+      alert('Errore inserimento proposta: ' + error.message)
+    } else {
+      alert('✅ Proposta creata con successo')
+      setFormData({
+        asset: '',
+        name: '',
+        sector: '',
+        type: 'BUY',
+        entry_price: '',
+        quantity: '',
+        percent_liquidity: '',
+        take_profit: '',
+        stop_loss: '',
+        currency: 'EUR',
+        getExchangeRate: '',
+        target_date: '',
+        motivation: ''
+      })
+      await loadProposals()
+    }
+
+    setSubmitting(false)
   }
 
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">💡 Proposte</h1>
 
-      <Tabs defaultValue="aggiungi" onValueChange={(val) => {
-        if (val === 'visualizza') loadProposals()
-      }}>
+      <Tabs defaultValue="visualizza" onValueChange={(val) => { if (val === 'visualizza') loadProposals() }}>
         <TabsList>
-          <TabsTrigger value="aggiungi">Aggiungi Proposta</TabsTrigger>
           <TabsTrigger value="visualizza">Visualizza</TabsTrigger>
+          <TabsTrigger value="aggiungi">Aggiungi Proposta</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="aggiungi">
-          <Card>
-            <CardHeader>
-              <CardTitle>Nuova Proposta</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Asset (Ticker)</label>
-                    <Input
-                      value={formData.asset}
-                      onChange={(e) => setFormData({ ...formData, asset: e.target.value })}
-                      placeholder="Es: AAPL"
-                      required
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Nome</label>
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Es: Apple Inc"
-                      disabled={submitting}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Settore</label>
-                    <Input
-                      value={formData.sector}
-                      onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                      placeholder="Es: Technology"
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Tipo</label>
-                    <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })} disabled={submitting}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BUY">BUY</SelectItem>
-                        <SelectItem value="SELL">SELL</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Entry Price</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.entry_price}
-                      onChange={(e) => setFormData({ ...formData, entry_price: e.target.value })}
-                      required
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Quantità</label>
-                    <Input
-                      type="number"
-                      step="1"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                      required
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">% Liquidità</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.percent_liquidity}
-                      onChange={(e) => setFormData({ ...formData, percent_liquidity: e.target.value })}
-                      disabled={submitting}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Take Profit</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.take_profit}
-                      onChange={(e) => setFormData({ ...formData, take_profit: e.target.value })}
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Stop Loss</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.stop_loss}
-                      onChange={(e) => setFormData({ ...formData, stop_loss: e.target.value })}
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Target Date</label>
-                    <Input
-                      type="date"
-                      value={formData.target_date}
-                      onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
-                      disabled={submitting}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Valuta</label>
-                    <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v })} disabled={submitting}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Tasso Cambio</label>
-                    <Input
-                      type="number"
-                      step="0.0001"
-                      value={formData.exchange_rate}
-                      onChange={(e) => setFormData({ ...formData, exchange_rate: e.target.value })}
-                      disabled={submitting}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Motivazione</label>
-                  <label className="block text-sm font-medium mb-1">Motivazione</label>
-                  <textarea
-                    value={formData.motivation}
-                    onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
-                    placeholder="Spiega la motivazione della proposta"
-                    className="w-full p-2 border rounded resize-y"
-                    rows={4}
-                  />
-                </div>
-
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? 'Salvataggio...' : 'Salva Proposta'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="visualizza">
-          <Card>
-            <CardContent className="py-8">
-              {loadingProposals ? (
-                <p className="text-center text-gray-500">Caricamento...</p>
-              ) : proposals.length === 0 ? (
-                <p className="text-center text-gray-500">Nessuna proposta</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Asset</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Entry Price</TableHead>
-                        <TableHead>Quantità</TableHead>
-                        <TableHead>TP</TableHead>
-                        <TableHead>SL</TableHead>
-                        <TableHead>Valore EUR</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Voti</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {proposals.map(prop => (
-                        <TableRow key={prop.id}>
-                          <TableCell>{prop.asset}</TableCell>
-                          <TableCell>{prop.type}</TableCell>
-                          <TableCell>{prop.entry_price?.toFixed(2)}</TableCell>
-                          <TableCell>{prop.quantity}</TableCell>
-                          <TableCell>{prop.take_profit?.toFixed(2) || '-'}</TableCell>
-                          <TableCell>{prop.stop_loss?.toFixed(2) || '-'}</TableCell>
-                          <TableCell>{prop.total_value_eur?.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Badge variant={prop.status === 'approved' ? 'default' : prop.status === 'rejected' ? 'destructive' : 'secondary'}>
-                              {prop.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{prop.votes_approve}/{prop.votes_required}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+          {/* Visualizza lista proposte */}
+          <div className="space-y-4">
+            {loading ? (
+              <p>Caricamento...</p>
+            ) : (
+              proposals.map(proposal => (
+                <div key={proposal.id} className="border p-4 rounded shadow">
+                  <h2 className="text-xl font-bold">{proposal.asset} - {proposal.type}</h2>
+                  <p>Entry Price: {proposal.entry_price?.toFixed(2)} {proposal.currency}</p>
+                  <p>Quantity: {proposal.quantity}</p>
+                  <p>Percent Liquidity: {proposal.percent_liquidity?.toFixed(2) ?? 'N/A'}%</p>
+                  <p>Status: {proposal.status}</p>
+                  <p>Motivation: {proposal.motivation}</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+        <TabsContent value="aggiungi">
+          {/* Form inserimento proposta */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Asset (Ticker)"
+              value={formData.asset}
+              onChange={e => setFormData({ ...formData, asset: e.target.value })}
+              onBlur={() => handleTickerChange(formData.asset)}
+              placeholder="Es: AAPL, ISP.MI"
+              required
+            />
+            <Input label="Entry Price" type="number" step="0.01" value={formData.entry_price} onChange={e => setFormData({ ...formData, entry_price: e.target.value })} required />
+            <Input label="Quantity" type="number" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} required />
+            <Input label="Percent Liquidity" type="number" step="0.01" value={formData.percent_liquidity} disabled />
+            <Select label="Currency" value={formData.currency} onValueChange={v => setFormData({ ...formData, currency: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="EUR">EUR</SelectItem>
+                <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="GBP">GBP</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input label="Exchange Rate" type="number" step="0.0001" value={formData.getExchangeRate} disabled />
+            <Input label="Take Profit" type="number" step="0.01" value={formData.take_profit} onChange={e => setFormData({ ...formData, take_profit: e.target.value })} />
+            <Input label="Stop Loss" type="number" step="0.01" value={formData.stop_loss} onChange={e => setFormData({ ...formData, stop_loss: e.target.value })} />
+            <Input label="Target Date" type="date" value={formData.target_date} onChange={e => setFormData({ ...formData, target_date: e.target.value })} />
+            <label className="block text-sm font-medium mb-1">Motivation</label>
+            <textarea
+              value={formData.motivation}
+              onChange={e => setFormData({ ...formData, motivation: e.target.value })}
+              className="w-full p-2 border rounded"
+              rows={4}
+              placeholder="Explain your reasons..."
+            />
+            <Button type="submit" disabled={submitting} className="w-full">Submit Proposal</Button>
+          </form>
         </TabsContent>
       </Tabs>
     </div>
