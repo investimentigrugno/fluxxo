@@ -17,55 +17,60 @@ export default function PortfolioPage() {
   }, [])
 
   async function loadPortfolio() {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('date', { ascending: false })
+  setLoading(true)
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .order('date', { ascending: false })
 
-    if (error) {
-      console.error('Errore:', error)
-      alert('Errore caricamento portfolio')
-      setPortfolio([])
-    } else {
-      const grouped: any = {}
-      
-      ;(data ?? []).forEach((tx: any) => {
-        const key = tx.instrument
-        if (!grouped[key]) {
-          grouped[key] = {
-            instrument: tx.instrument,
-            currency: tx.currency,
-            quantity: 0,
-            totalCost: 0,
-            transactions: []
-          }
+  if (error) {
+    console.error('Errore:', error)
+    alert('Errore caricamento portfolio')
+    setPortfolio([])
+  } else {
+    const grouped: any = {}
+    
+    ;(data ?? []).forEach((tx: any) => {
+      const key = tx.instrument
+      if (!grouped[key]) {
+        grouped[key] = {
+          instrument: tx.instrument,
+          currency: tx.currency,
+          quantity: 0,
+          totalCost: 0,
+          transactions: []
         }
-        
-        if (tx.type === 'Buy') {
-          grouped[key].quantity += parseFloat(tx.quantity)
-          grouped[key].totalCost += parseFloat(tx.quantity) * parseFloat(tx.unit_price)
-        } else if (tx.type === 'Sell') {
-          grouped[key].quantity -= parseFloat(tx.quantity)
-          grouped[key].totalCost -= parseFloat(tx.quantity) * parseFloat(tx.unit_price)
-        }
-        grouped[key].transactions.push(tx)
-      })
-
-      const portfolio = Object.values(grouped).filter((p: any) => p.quantity > 0)
-      setPortfolio(portfolio as any[])
-
-      const totalValue = portfolio.reduce((sum: number, p: any) => sum + (p.quantity * (p.totalCost / p.quantity)), 0)
-      const totalCost = portfolio.reduce((sum: number, p: any) => sum + p.totalCost, 0)
+      }
       
-      setTotals({
-        value: totalValue,
-        pnl: totalValue - totalCost,
-        pnlPercent: ((totalValue - totalCost) / totalCost) * 100
-      })
-    }
-    setLoading(false)
+      if (tx.type === 'Buy') {
+        grouped[key].quantity += parseFloat(tx.quantity)
+        grouped[key].totalCost += parseFloat(tx.quantity) * parseFloat(tx.unit_price)
+      } else if (tx.type === 'Sell') {
+        grouped[key].quantity -= parseFloat(tx.quantity)
+        grouped[key].totalCost -= parseFloat(tx.quantity) * parseFloat(tx.unit_price)
+      }
+      grouped[key].transactions.push(tx)
+    })
+
+    // ✅ FILTRO: Solo posizioni con quantità != 0
+    const portfolio = Object.values(grouped).filter((p: any) => Math.abs(p.quantity) > 0.0001)
+    setPortfolio(portfolio as any[])
+
+    const totalValue = portfolio.reduce((sum: number, p: any) => {
+      const avgPrice = p.totalCost / p.quantity
+      return sum + (p.quantity * avgPrice)
+    }, 0)
+    
+    const totalCost = portfolio.reduce((sum: number, p: any) => sum + p.totalCost, 0)
+    
+    setTotals({
+      value: totalValue,
+      pnl: totalValue - totalCost,
+      pnlPercent: totalCost !== 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0
+    })
   }
+  setLoading(false)
+}
 
   return (
     <AuthWrapper>
