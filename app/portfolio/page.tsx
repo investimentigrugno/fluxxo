@@ -45,7 +45,7 @@ export default function PortfolioPage() {
         currentQuantity: 0,
         avgCost: 0,
         totalValue: 0,
-        remainingLots: [], // SOLO lotti NON venduti
+        remainingLots: [],
         transactions: []
       }
     }
@@ -53,66 +53,53 @@ export default function PortfolioPage() {
     grouped[key].transactions.push(tx)
 
     if (isSpecial) {
-      // LOGICA SEMPLICE per BONDORA etc.
-      const unitPrice = parseFloat(tx.unit_price || '0')
-      if (tx.type === 'Buy') {
-        grouped[key].currentQuantity += unitPrice
-      } else if (tx.type === 'Sell') {
-        grouped[key].currentQuantity -= unitPrice
-      }
-      grouped[key].avgCost = unitPrice // Ultimo prezzo per speciali
-      grouped[key].totalValue = grouped[key].currentQuantity * grouped[key].avgCost
+      // Calcola somma buy e sell di unit_price
+      grouped[key].sumBuy = (grouped[key].sumBuy || 0) + (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
+      grouped[key].sumSell = (grouped[key].sumSell || 0) + (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
     } else {
-      // ✅ LOGICA FIFO CORRETTA
-      const qty = parseFloat(tx.quantity || '0')
-      const price = parseFloat(tx.unit_price || '0')
-
+      const quantity = parseFloat(tx.quantity || '0')
+      const unitPrice = parseFloat(tx.unit_price || '0')
+      
       if (tx.type === 'Buy') {
-        // AGGIUNGI LOTTO NUOVO
-        grouped[key].remainingLots.push({ 
-          quantity: qty, 
-          unitPrice: price,
-          date: tx.date 
-        })
-      } else if (tx.type === 'Sell' && qty > 0 && grouped[key].remainingLots.length > 0) {
-        // CONSUMA LOTTI PIÙ VECCHI (FIFO)
-        let remainingQty = qty
-        while (remainingQty > 0 && grouped[key].remainingLots.length > 0) {
+        grouped[key].remainingLots.push({ quantity, unitPrice })
+      } else if (tx.type === 'Sell' && quantity > 0) {
+        let qtyToSell = quantity
+        while (qtyToSell > 0 && grouped[key].remainingLots.length > 0) {
           const lot = grouped[key].remainingLots[0]
-          if (lot.quantity <= remainingQty) {
-            // CONSUMA LOTTO COMPLETO
-            remainingQty -= lot.quantity
+          if (lot.quantity <= qtyToSell) {
+            qtyToSell -= lot.quantity
             grouped[key].remainingLots.shift()
           } else {
-            // CONSUMA PARZIALMENTE
-            lot.quantity -= remainingQty
-            remainingQty = 0
+            lot.quantity -= qtyToSell
+            qtyToSell = 0
           }
         }
-      }
-
-      // CALCOLA POSIZIONE ATTUALE DAI LOTTI RIMANENTI
-      grouped[key].currentQuantity = grouped[key].remainingLots.reduce(
-        (sum: number, lot: any) => sum + lot.quantity, 0
-      )
-
-      if (grouped[key].currentQuantity > 0) {
-        // COSTO MEDIO = PESO DEI LOTTI RIMANENTI
-        const totalCost = grouped[key].remainingLots.reduce(
-          (sum: number, lot: any) => sum + (lot.quantity * lot.unitPrice), 0
-        )
-        grouped[key].avgCost = totalCost / grouped[key].currentQuantity
-        grouped[key].totalValue = grouped[key].currentQuantity * grouped[key].avgCost
-      } else {
-        grouped[key].avgCost = 0
-        grouped[key].totalValue = 0
       }
     }
   })
 
-  const portfolio: any[] = Object.values(grouped).filter(
-    (p: any) => (p.currentQuantity || 0) > 0.00000001
-  )
+  // Ora calcola quantità, costo medio, valore per special e normali
+  Object.values(grouped).forEach((pos: any) => {
+    if (specialInstruments.includes(pos.instrument)) {
+      const netCost = (pos.sumBuy || 0) - (pos.sumSell || 0)
+      // Per special instruments quantità = 1 se c’è valore net positivo, 0 altrimenti
+      pos.currentQuantity = netCost > 0 ? 1 : 0
+      pos.avgCost = Math.abs(netCost)
+      pos.totalValue = pos.currentQuantity * pos.avgCost
+    } else {
+      pos.currentQuantity = pos.remainingLots.reduce((sum: number, lot: any) => sum + lot.quantity, 0)
+      if (pos.currentQuantity > 0) {
+        const totalCost = pos.remainingLots.reduce((sum: number, lot: any) => sum + (lot.quantity * lot.unitPrice), 0)
+        pos.avgCost = totalCost / pos.currentQuantity
+        pos.totalValue = pos.currentQuantity * pos.avgCost
+      } else {
+        pos.avgCost = 0
+        pos.totalValue = 0
+      }
+    }
+  })
+
+  const portfolio = Object.values(grouped).filter((p: any) => (p.currentQuantity || 0) > 0.00000001) as any[]
   setPortfolio(portfolio)
 
   const totalValue = portfolio.reduce((sum: number, p: any) => sum + (p.totalValue || 0), 0)
@@ -126,6 +113,7 @@ export default function PortfolioPage() {
 
   setLoading(false)
 }
+
 
   return (
     <AuthWrapper>
