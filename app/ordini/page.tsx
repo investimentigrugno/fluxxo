@@ -11,29 +11,28 @@ import AuthWrapper from '@/components/ui/AuthWrapper'
 
 export default function OrdiniPage() {
   const supabase = createClientComponentClient()
-  
   const [orders, setOrders] = useState<any[]>([])
-  const [loadingOrders, setLoadingOrders] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadOrders()
+  }, [])
 
   async function loadOrders() {
-    setLoadingOrders(true)
+    setLoading(true)
     const { data, error } = await supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false })
 
     if (error) {
-      alert('Errore: ' + error.message)
-      setOrders([])
+      console.error('Errore:', error)
+      alert('Errore caricamento ordini')
     } else {
       setOrders(data ?? [])
     }
-    setLoadingOrders(false)
+    setLoading(false)
   }
-
-  useEffect(() => {
-    loadOrders()
-  }, [])
 
   async function updateOrderStatus(orderId: string, newStatus: string) {
     const { error } = await supabase
@@ -47,152 +46,107 @@ export default function OrdiniPage() {
     if (error) {
       alert('Errore: ' + error.message)
     } else {
-      alert('✅ Ordine aggiornato!')
+      alert('✅ Ordine aggiornato')
       await loadOrders()
     }
   }
 
-  const activeOrders = orders.filter(o => o.status === 'inserted')
-  const executedOrders = orders.filter(o => o.status === 'executed')
-  const cancelledOrders = orders.filter(o => o.status === 'cancelled')
+  const statusColors: any = {
+    inserted: 'bg-yellow-100 text-yellow-800',
+    executed: 'bg-green-100 text-green-800',
+    cancelled: 'bg-red-100 text-red-800'
+  }
+
+  const filteredOrders = (status: string) => orders.filter(o => o.status === status)
 
   return (
     <AuthWrapper>
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">📊 Ordini</h1>
+      <div className="container mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6">📋 Ordini</h1>
 
-      <Tabs defaultValue="attivi">
-        <TabsList>
-          <TabsTrigger value="attivi">Attivi ({activeOrders.length})</TabsTrigger>
-          <TabsTrigger value="eseguiti">Eseguiti ({executedOrders.length})</TabsTrigger>
-          <TabsTrigger value="cancellati">Cancellati ({cancelledOrders.length})</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="inserted">
+          <TabsList>
+            <TabsTrigger value="inserted">
+              Inseriti ({filteredOrders('inserted').length})
+            </TabsTrigger>
+            <TabsTrigger value="executed">
+              Eseguiti ({filteredOrders('executed').length})
+            </TabsTrigger>
+            <TabsTrigger value="cancelled">
+              Cancellati ({filteredOrders('cancelled').length})
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="attivi">
-          <Card>
-            <CardContent className="py-8">
-              {loadingOrders ? (
-                <p className="text-center text-gray-500">Caricamento...</p>
-              ) : activeOrders.length === 0 ? (
-                <p className="text-center text-gray-500">Nessun ordine attivo</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Asset</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Entry Price</TableHead>
-                        <TableHead>Quantità</TableHead>
-                        <TableHead>TP</TableHead>
-                        <TableHead>SL</TableHead>
-                        <TableHead>Valore EUR</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Azione</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {activeOrders.map(order => (
-                        <TableRow key={order.id}>
-                          <TableCell>{order.asset}</TableCell>
-                          <TableCell>{order.type}</TableCell>
-                          <TableCell>{order.entry_price?.toFixed(2)}</TableCell>
-                          <TableCell>{order.quantity}</TableCell>
-                          <TableCell>{order.take_profit?.toFixed(2) || '-'}</TableCell>
-                          <TableCell>{order.stop_loss?.toFixed(2) || '-'}</TableCell>
-                          <TableCell>{order.total_value_eur?.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{order.status}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              onClick={() => updateOrderStatus(order.id, 'executed')}
-                            >
-                              Esegui
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="eseguiti">
-          <Card>
-            <CardContent className="py-8">
-              {executedOrders.length === 0 ? (
-                <p className="text-center text-gray-500">Nessun ordine eseguito</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Asset</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Entry Price</TableHead>
-                        <TableHead>Quantità</TableHead>
-                        <TableHead>Valore EUR</TableHead>
-                        <TableHead>Data Esecuzione</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {executedOrders.map(order => (
-                        <TableRow key={order.id}>
-                          <TableCell>{order.asset}</TableCell>
-                          <TableCell>{order.type}</TableCell>
-                          <TableCell>{order.entry_price?.toFixed(2)}</TableCell>
-                          <TableCell>{order.quantity}</TableCell>
-                          <TableCell>{order.total_value_eur?.toFixed(2)}</TableCell>
-                          <TableCell>{new Date(order.execution_date).toLocaleDateString()}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="cancellati">
-          <Card>
-            <CardContent className="py-8">
-              {cancelledOrders.length === 0 ? (
-                <p className="text-center text-gray-500">Nessun ordine cancellato</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Asset</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Entry Price</TableHead>
-                        <TableHead>Quantità</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {cancelledOrders.map(order => (
-                        <TableRow key={order.id}>
-                          <TableCell>{order.asset}</TableCell>
-                          <TableCell>{order.type}</TableCell>
-                          <TableCell>{order.entry_price?.toFixed(2)}</TableCell>
-                          <TableCell>{order.quantity}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+          {['inserted', 'executed', 'cancelled'].map((status) => (
+            <TabsContent key={status} value={status}>
+              <Card>
+                <CardContent className="py-8">
+                  {loading ? (
+                    <p className="text-center text-gray-500">Caricamento...</p>
+                  ) : filteredOrders(status).length === 0 ? (
+                    <p className="text-center text-gray-500">Nessun ordine</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Asset</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Entry Price</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Take Profit</TableHead>
+                            <TableHead>Stop Loss</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Azioni</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredOrders(status).map(order => (
+                            <TableRow key={order.id}>
+                              <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                              <TableCell>{order.asset}</TableCell>
+                              <TableCell>{order.type}</TableCell>
+                              <TableCell>{order.entry_price?.toFixed(2)}</TableCell>
+                              <TableCell>{order.quantity}</TableCell>
+                              <TableCell>{order.take_profit?.toFixed(2) ?? '-'}</TableCell>
+                              <TableCell>{order.stop_loss?.toFixed(2) ?? '-'}</TableCell>
+                              <TableCell>
+                                <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${statusColors[order.status]}`}>
+                                  {order.status}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {status === 'inserted' && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateOrderStatus(order.id, 'executed')}
+                                  >
+                                    Esegui
+                                  </Button>
+                                )}
+                                {status !== 'cancelled' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                                  >
+                                    Cancella
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
     </AuthWrapper>
   )
 }
