@@ -9,7 +9,7 @@ import AuthWrapper from '@/components/ui/AuthWrapper'
 export default function PortfolioPage() {
   const supabase = createClientComponentClient()
   const [portfolio, setPortfolio] = useState<any[]>([])
-  const [prices, setPrices] = useState<Record<string, { price: number; currency: string; name: string }>>({})
+  const [prices, setPrices] = useState<Record<string, { price: number; currency: string }>>({})
   const [loading, setLoading] = useState(true)
   const [loadingPrices, setLoadingPrices] = useState(false)
   const [totals, setTotals] = useState({ value: 0, pnl: 0, pnlPercent: 0 })
@@ -109,14 +109,14 @@ export default function PortfolioPage() {
     }
 
     const specialInstruments = ['BONDORA', 'BONDORA_CASH', 'BOT.FX', 'EURO']
-    const grouped = new Map<string, any>()
+    const grouped = {} as any
 
     (data ?? []).forEach((tx: any) => {
       const key = tx.instrument
       const isSpecial = specialInstruments.includes(key)
 
-      if (!grouped.has(key)) {
-        grouped.set(key, {
+      if (!grouped[key]) {
+        grouped[key] = {
           instrument: key,
           currency: tx.currency || 'EUR',
           currentQuantity: 0,
@@ -128,32 +128,31 @@ export default function PortfolioPage() {
           sumSell: 0,
           sumDeposit: 0,
           sumWithdrawal: 0
-        })
+        }
       }
 
-      const pos = grouped.get(key)
-      pos.transactions.push(tx)
+      grouped[key].transactions.push(tx)
 
       if (key === 'EURO') {
         const amount = parseFloat(tx.unit_price || '0')
         if (amount > 0) {
-          pos.sumDeposit += amount
+          grouped[key].sumDeposit += amount
         } else {
-          pos.sumWithdrawal += Math.abs(amount)
+          grouped[key].sumWithdrawal += Math.abs(amount)
         }
       } else if (isSpecial) {
-        pos.sumBuy += (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
-        pos.sumSell += (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
+        grouped[key].sumBuy += (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
+        grouped[key].sumSell += (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
       } else {
         const quantity = parseFloat(tx.quantity || '0')
         const unitPrice = parseFloat(tx.unit_price || '0')
         const commission = parseFloat(tx.commission || '0')
         
         if (tx.type === 'Buy') {
-          pos.remainingLots.push({ quantity, unitPrice })
+          grouped[key].remainingLots.push({ quantity, unitPrice })
           
-          if (!grouped.has('EURO')) {
-            grouped.set('EURO', {
+          if (!grouped['EURO']) {
+            grouped['EURO'] = {
               instrument: 'EURO',
               currency: 'EUR',
               currentQuantity: 0,
@@ -165,26 +164,25 @@ export default function PortfolioPage() {
               sumSell: 0,
               sumDeposit: 0,
               sumWithdrawal: 0
-            })
+            }
           }
-          const euroPos = grouped.get('EURO')
-          euroPos.sumBuy += (quantity * unitPrice) + commission
+          grouped['EURO'].sumBuy += (quantity * unitPrice) + commission
           
         } else if (tx.type === 'Sell' && quantity > 0) {
           let qtyToSell = quantity
-          while (qtyToSell > 0 && pos.remainingLots.length > 0) {
-            const lot = pos.remainingLots[0]
+          while (qtyToSell > 0 && grouped[key].remainingLots.length > 0) {
+            const lot = grouped[key].remainingLots[0]
             if (lot.quantity <= qtyToSell) {
               qtyToSell -= lot.quantity
-              pos.remainingLots.shift()
+              grouped[key].remainingLots.shift()
             } else {
               lot.quantity -= qtyToSell
               qtyToSell = 0
             }
           }
           
-          if (!grouped.has('EURO')) {
-            grouped.set('EURO', {
+          if (!grouped['EURO']) {
+            grouped['EURO'] = {
               instrument: 'EURO',
               currency: 'EUR',
               currentQuantity: 0,
@@ -196,15 +194,14 @@ export default function PortfolioPage() {
               sumSell: 0,
               sumDeposit: 0,
               sumWithdrawal: 0
-            })
+            }
           }
-          const euroPos = grouped.get('EURO')
-          euroPos.sumSell += (quantity * unitPrice) - commission
+          grouped['EURO'].sumSell += (quantity * unitPrice) - commission
         }
       }
     })
 
-    Array.from(grouped.values()).forEach((pos: any) => {
+    Object.values(grouped).forEach((pos: any) => {
       if (pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') {
         const { totalCost, currentValue } = computeBondoraValue(pos.instrument)
         pos.currentQuantity = totalCost > 0 ? 1 : 0
@@ -233,7 +230,7 @@ export default function PortfolioPage() {
       }
     })
 
-    const portfolio = Array.from(grouped.values()).filter((p: any) => 
+    const portfolio = Object.values(grouped).filter((p: any) => 
       p.instrument === 'EURO' || (p.currentQuantity || 0) > 0.00000001
     ) as any[]
     
