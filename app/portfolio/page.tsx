@@ -18,11 +18,9 @@ export default function PortfolioPage() {
     loadPortfolio()
   }, [])
 
-  // ✅ Calcolo Bondora con crescita composta dal valore consolidato al 26/11/2025
   function computeBondoraValue(instrument: string) {
-    const DAILY_RATE = 0.000164384 // 0,0164384%
+    const DAILY_RATE = 0.000164384
     
-    // Valori base al 26/11/2025 (dal CSV Portfolio)
     const baseValues: Record<string, { cost: number, value: number, baseDate: string }> = {
       'BONDORA': { cost: 2465.02, value: 2922.74, baseDate: '2025-11-26' },
       'BONDORA_CASH': { cost: 1050.00, value: 1147.34, baseDate: '2025-11-26' }
@@ -46,7 +44,6 @@ export default function PortfolioPage() {
   }
 
   async function fetchPrices(instruments: string[]) {
-    // ✅ Escludi strumenti speciali che non hanno ticker su yfinance
     const validInstruments = instruments.filter(instrument => 
       !['BONDORA', 'BONDORA_CASH', 'BOT.FX', 'EURO'].includes(instrument)
     )
@@ -111,16 +108,15 @@ export default function PortfolioPage() {
       return
     }
 
-    // ✅ Strumenti con logica speciale (non FIFO standard)
     const specialInstruments = ['BONDORA', 'BONDORA_CASH', 'BOT.FX', 'EURO']
-    const grouped: Record<string, any> = {}
+    const grouped = new Map<string, any>()
 
     (data ?? []).forEach((tx: any) => {
       const key = tx.instrument
       const isSpecial = specialInstruments.includes(key)
 
-      if (!grouped[key]) {
-        grouped[key] = {
+      if (!grouped.has(key)) {
+        grouped.set(key, {
           instrument: key,
           currency: tx.currency || 'EUR',
           currentQuantity: 0,
@@ -132,35 +128,32 @@ export default function PortfolioPage() {
           sumSell: 0,
           sumDeposit: 0,
           sumWithdrawal: 0
-        }
+        })
       }
 
-      grouped[key].transactions.push(tx)
+      const pos = grouped.get(key)
+      pos.transactions.push(tx)
 
-      // ✅ EURO: accumula da Bonifico
       if (key === 'EURO') {
         const amount = parseFloat(tx.unit_price || '0')
         if (amount > 0) {
-          grouped[key].sumDeposit += amount
+          pos.sumDeposit += amount
         } else {
-          grouped[key].sumWithdrawal += Math.abs(amount)
+          pos.sumWithdrawal += Math.abs(amount)
         }
       } else if (isSpecial) {
-        // BONDORA, BONDORA_CASH, BOT.FX usano Buy/Sell
-        grouped[key].sumBuy += (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
-        grouped[key].sumSell += (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
+        pos.sumBuy += (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
+        pos.sumSell += (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
       } else {
-        // ✅ Strumenti normali: FIFO + aggiorna liquidità EURO
         const quantity = parseFloat(tx.quantity || '0')
         const unitPrice = parseFloat(tx.unit_price || '0')
         const commission = parseFloat(tx.commission || '0')
         
         if (tx.type === 'Buy') {
-          grouped[key].remainingLots.push({ quantity, unitPrice })
+          pos.remainingLots.push({ quantity, unitPrice })
           
-          // ✅ Buy sottrae liquidità da EURO - crea EURO se non esiste
-          if (!grouped['EURO']) {
-            grouped['EURO'] = {
+          if (!grouped.has('EURO')) {
+            grouped.set('EURO', {
               instrument: 'EURO',
               currency: 'EUR',
               currentQuantity: 0,
@@ -172,27 +165,26 @@ export default function PortfolioPage() {
               sumSell: 0,
               sumDeposit: 0,
               sumWithdrawal: 0
-            }
+            })
           }
-          grouped['EURO'].sumBuy += (quantity * unitPrice) + commission
+          const euroPos = grouped.get('EURO')
+          euroPos.sumBuy += (quantity * unitPrice) + commission
           
         } else if (tx.type === 'Sell' && quantity > 0) {
-          // FIFO Sell
           let qtyToSell = quantity
-          while (qtyToSell > 0 && grouped[key].remainingLots.length > 0) {
-            const lot = grouped[key].remainingLots[0]
+          while (qtyToSell > 0 && pos.remainingLots.length > 0) {
+            const lot = pos.remainingLots[0]
             if (lot.quantity <= qtyToSell) {
               qtyToSell -= lot.quantity
-              grouped[key].remainingLots.shift()
+              pos.remainingLots.shift()
             } else {
               lot.quantity -= qtyToSell
               qtyToSell = 0
             }
           }
           
-          // ✅ Sell aggiunge liquidità a EURO - crea EURO se non esiste
-          if (!grouped['EURO']) {
-            grouped['EURO'] = {
+          if (!grouped.has('EURO')) {
+            grouped.set('EURO', {
               instrument: 'EURO',
               currency: 'EUR',
               currentQuantity: 0,
@@ -204,36 +196,31 @@ export default function PortfolioPage() {
               sumSell: 0,
               sumDeposit: 0,
               sumWithdrawal: 0
-            }
+            })
           }
-          grouped['EURO'].sumSell += (quantity * unitPrice) - commission
+          const euroPos = grouped.get('EURO')
+          euroPos.sumSell += (quantity * unitPrice) - commission
         }
       }
     })
 
-    // ✅ Calcola quantità, costo, valore per ogni posizione
-    Object.values(grouped).forEach((pos: any) => {
+    Array.from(grouped.values()).forEach((pos: any) => {
       if (pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') {
-        // ✅ Bondora: crescita composta dal 26/11/2025
         const { totalCost, currentValue } = computeBondoraValue(pos.instrument)
         pos.currentQuantity = totalCost > 0 ? 1 : 0
         pos.avgCost = totalCost
         pos.totalValue = currentValue
       } else if (pos.instrument === 'EURO') {
-        // ✅ EURO: formula deposit - withdrawal - buy + sell
         const netAmount = pos.sumDeposit - pos.sumWithdrawal - pos.sumBuy + pos.sumSell
-        // ✅ Mantieni sempre EURO visibile (anche se negativo)
         pos.currentQuantity = 1
         pos.avgCost = netAmount
         pos.totalValue = netAmount
       } else if (pos.instrument === 'BOT.FX') {
-        // ✅ BOT.FX: netto Buy - Sell
         const netCost = pos.sumBuy - pos.sumSell
         pos.currentQuantity = netCost > 0 ? 1 : 0
         pos.avgCost = Math.abs(netCost)
         pos.totalValue = pos.currentQuantity * pos.avgCost
       } else {
-        // ✅ Strumenti normali: FIFO
         pos.currentQuantity = pos.remainingLots.reduce((sum: number, lot: any) => sum + lot.quantity, 0)
         if (pos.currentQuantity > 0) {
           const totalCost = pos.remainingLots.reduce((sum: number, lot: any) => sum + (lot.quantity * lot.unitPrice), 0)
@@ -246,8 +233,7 @@ export default function PortfolioPage() {
       }
     })
 
-    // ✅ Filtra solo posizioni > 0 TRANNE EURO che va sempre mostrato
-    const portfolio = Object.values(grouped).filter((p: any) => 
+    const portfolio = Array.from(grouped.values()).filter((p: any) => 
       p.instrument === 'EURO' || (p.currentQuantity || 0) > 0.00000001
     ) as any[]
     
@@ -258,7 +244,6 @@ export default function PortfolioPage() {
       fetchPrices(instruments)
     }
 
-    // Calcolo totali iniziali (con prezzi = avgCost)
     const totalValue = portfolio.reduce((sum: number, p: any) => sum + (p.totalValue || 0), 0)
     const totalCost = portfolio.reduce((sum: number, p: any) => sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0)
 
@@ -271,16 +256,13 @@ export default function PortfolioPage() {
     setLoading(false)
   }
 
-  // ✅ Aggiorna totali quando arrivano i prezzi correnti da API
   useEffect(() => {
     if (Object.keys(prices).length > 0 && portfolio.length > 0) {
       const totalValueCurrent = portfolio.reduce((sum: number, p: any) => {
-        // Per Bondora/Bondora_Cash usa il valore già calcolato con crescita composta
         if (p.instrument === 'BONDORA' || p.instrument === 'BONDORA_CASH') {
           return sum + p.totalValue
         }
         
-        // Per tutti gli altri usa il prezzo da API (o avgCost se non disponibile)
         const priceData = prices[p.instrument]
         const currentPrice = priceData?.price || p.avgCost || 0
         return sum + ((p.currentQuantity || 0) * currentPrice)
@@ -303,7 +285,6 @@ export default function PortfolioPage() {
       <div className="container mx-auto p-6">
         <h1 className="text-3xl font-bold mb-6">📊 Portafoglio</h1>
 
-        {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-6 mb-6">
           <Card>
             <CardContent className="pt-6">
@@ -329,7 +310,6 @@ export default function PortfolioPage() {
           </Card>
         </div>
 
-        {/* Tabella Posizioni */}
         <Card>
           <CardHeader>
             <CardTitle>Posizioni Aperte {loadingPrices && '(Prezzi in caricamento...)'}</CardTitle>
@@ -365,14 +345,12 @@ export default function PortfolioPage() {
                       let currentCurrency: string
                       let instrumentName: string
                       
-                      // ✅ Logica per strumenti speciali
                       if (pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') {
                         currentPrice = pos.totalValue
                         totalValueCurrent = pos.totalValue
                         currentCurrency = 'EUR'
                         instrumentName = pos.instrument
                       } else if (pos.instrument === 'EURO') {
-                        // ✅ EURO: liquidità (prezzo sempre uguale a PMC)
                         currentPrice = pmc
                         totalValueCurrent = pmc
                         currentCurrency = 'EUR'
@@ -383,7 +361,6 @@ export default function PortfolioPage() {
                         currentCurrency = 'EUR'
                         instrumentName = 'BOT.FX'
                       } else {
-                        // ✅ Strumenti normali: usa prezzo da API
                         const priceData = prices[pos.instrument] as any
                         currentPrice = priceData?.price || pmc
                         currentCurrency = priceData?.currency || pos.currency || 'EUR'
@@ -391,7 +368,6 @@ export default function PortfolioPage() {
                         totalValueCurrent = qty * currentPrice
                       }
                       
-                      // ✅ Formula P&L corretta: (currentPrice * qty) - (pmc * qty)
                       const totalCostValue = pmc * qty
                       const pnl = (currentPrice * qty) - (pmc * qty)
                       const pnlPercent = totalCostValue !== 0 ? (pnl / totalCostValue) * 100 : 0
