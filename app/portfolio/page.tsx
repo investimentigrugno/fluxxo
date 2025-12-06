@@ -18,7 +18,7 @@ export default function PortfolioPage() {
     loadPortfolio()
   }, [])
 
-  //calcolo crescita composta Bondora
+  // ✅ FUNZIONE CORRETTA - usa valore base consolidato al 26/11/2025
   function computeBondoraValue(instrument: string) {
     const DAILY_RATE = 0.000164384 // 0,0164384%
     
@@ -45,10 +45,7 @@ export default function PortfolioPage() {
     }
   }
 
-
-
   async function fetchPrices(instruments: string[]) {
-    // ✅ INVARIATA - filtra solo i 3 speciali
     const validInstruments = instruments.filter(instrument => 
       !['BONDORA', 'BONDORA_CASH', 'BOT.FX'].includes(instrument)
     )
@@ -116,7 +113,6 @@ export default function PortfolioPage() {
     const specialInstruments = ['BONDORA', 'BONDORA_CASH', 'BOT.FX']
     const grouped = {} as any
 
-    // ✅ INVARIATA - stessa logica di raggruppamento
     (data ?? []).forEach((tx: any) => {
       const key = tx.instrument
       const isSpecial = specialInstruments.includes(key)
@@ -141,7 +137,6 @@ export default function PortfolioPage() {
         grouped[key].sumBuy += (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
         grouped[key].sumSell += (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
       } else {
-        // ✅ INVARIATA - FIFO logic per strumenti normali
         const quantity = parseFloat(tx.quantity || '0')
         const unitPrice = parseFloat(tx.unit_price || '0')
         
@@ -163,21 +158,19 @@ export default function PortfolioPage() {
       }
     })
 
-    // ✅ MODIFICATA SOLO PER BONDORA/BONDORA_CASH - il resto invariato
     Object.values(grouped).forEach((pos: any) => {
       if (pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') {
+        // ✅ USA VALORE BASE CONSOLIDATO
         const { totalCost, currentValue } = computeBondoraValue(pos.instrument)
         pos.currentQuantity = totalCost > 0 ? 1 : 0
         pos.avgCost = totalCost
         pos.totalValue = currentValue
       } else if (pos.instrument === 'BOT.FX') {
-        // ✅ INVARIATA - BOT.FX resta netto Buy-Sell
         const netCost = pos.sumBuy - pos.sumSell
         pos.currentQuantity = netCost > 0 ? 1 : 0
         pos.avgCost = Math.abs(netCost)
         pos.totalValue = pos.currentQuantity * pos.avgCost
       } else {
-        // ✅ INVARIATA - calcolo FIFO standard
         pos.currentQuantity = pos.remainingLots.reduce((sum: number, lot: any) => sum + lot.quantity, 0)
         if (pos.currentQuantity > 0) {
           const totalCost = pos.remainingLots.reduce((sum: number, lot: any) => sum + (lot.quantity * lot.unitPrice), 0)
@@ -193,15 +186,14 @@ export default function PortfolioPage() {
     const portfolio = Object.values(grouped).filter((p: any) => (p.currentQuantity || 0) > 0.00000001) as any[]
     setPortfolio(portfolio)
 
-    // ✅ INVARIATA - fetch prezzi correnti
     const instruments = portfolio.map((p: any) => p.instrument)
     if (instruments.length > 0) {
       fetchPrices(instruments)
     }
 
-    // ✅ INVARIATA - calcolo totali iniziali
+    // Calcolo totali iniziali
     const totalValue = portfolio.reduce((sum: number, p: any) => sum + (p.totalValue || 0), 0)
-    const totalCost = portfolio.reduce((sum: number, p: any) => sum + (p.avgCost || 0), 0)
+    const totalCost = portfolio.reduce((sum: number, p: any) => sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0)
 
     setTotals({
       value: totalValue,
@@ -212,23 +204,20 @@ export default function PortfolioPage() {
     setLoading(false)
   }
 
-  // ✅ MODIFICATA SOLO per Bondora - il resto invariato
   useEffect(() => {
     if (Object.keys(prices).length > 0 && portfolio.length > 0) {
       const totalValueCurrent = portfolio.reduce((sum: number, p: any) => {
-        // ✅ Per Bondora/Bondora_Cash usa totalValue già calcolato
         if (p.instrument === 'BONDORA' || p.instrument === 'BONDORA_CASH') {
           return sum + p.totalValue
         }
         
-        // ✅ INVARIATA - per tutti gli altri usa prezzi da API
         const priceData = prices[p.instrument]
         const currentPrice = priceData?.price || p.avgCost || 0
         return sum + ((p.currentQuantity || 0) * currentPrice)
       }, 0)
       
       const totalCost = portfolio.reduce((sum: number, p: any) => 
-        sum + (p.avgCost || 0), 0
+        sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0
       )
 
       setTotals({
@@ -297,30 +286,30 @@ export default function PortfolioPage() {
                   <TableBody>
                     {portfolio.map((pos: any) => {
                       const qty = Number(pos.currentQuantity) || 0
-                      const avgCost = Number(pos.avgCost) || 0
+                      const pmc = Number(pos.avgCost) || 0
                       
                       let currentPrice: number
                       let totalValueCurrent: number
                       let currentCurrency: string
                       let instrumentName: string
                       
-                      // ✅ MODIFICATA SOLO per Bondora/Bondora_Cash
                       if (pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') {
                         currentPrice = pos.totalValue
                         totalValueCurrent = pos.totalValue
                         currentCurrency = pos.currency || 'EUR'
                         instrumentName = pos.instrument
                       } else {
-                        // ✅ INVARIATA - logica esistente per tutti gli altri
                         const priceData = prices[pos.instrument] as any
-                        currentPrice = priceData?.price || avgCost
+                        currentPrice = priceData?.price || pmc
                         currentCurrency = priceData?.currency || pos.currency || 'EUR'
                         instrumentName = priceData?.name || pos.instrument
                         totalValueCurrent = qty * currentPrice
                       }
                       
-                      const totalCostValue = avgCost
-                      const pnl = totalValueCurrent - totalCostValue
+                      // ✅ FORMULA P&L CORRETTA: (currentPrice * qty) - (pmc * qty)
+                      const totalCostValue = pmc * qty
+                      const pnl = (currentPrice * qty) - (pmc * qty)
+                      // ✅ FORMULA P&L% CORRETTA: pnl / (pmc * qty) * 100
                       const pnlPercent = totalCostValue !== 0 ? (pnl / totalCostValue) * 100 : 0
 
                       return (
@@ -330,7 +319,7 @@ export default function PortfolioPage() {
                             {instrumentName.length > 25 ? `${instrumentName.substring(0, 25)}...` : instrumentName}
                           </TableCell>
                           <TableCell>{qty.toFixed(4)}</TableCell>
-                          <TableCell>€ {avgCost.toFixed(2)}</TableCell>
+                          <TableCell>€ {pmc.toFixed(2)}</TableCell>
                           <TableCell>
                             {(pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') ? (
                               `€ ${currentPrice.toFixed(2)}`
