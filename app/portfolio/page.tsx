@@ -18,35 +18,34 @@ export default function PortfolioPage() {
     loadPortfolio()
   }, [])
 
-  // ✅ NUOVA FUNZIONE - calcola valore Bondora con crescita composta giornaliera
-  function computeBondoraValue(transactions: any[]) {
+  //calcolo crescita composta Bondora
+  function computeBondoraValue(instrument: string) {
     const DAILY_RATE = 0.000164384 // 0,0164384%
-    const today = new Date()
     
-    let totalCost = 0
-    let currentValue = 0
-    
-    for (const tx of transactions) {
-      if (tx.type === 'Buy') {
-        const amount = parseFloat(tx.unit_price || '0')
-        const startDate = new Date(tx.date)
-        const diffTime = today.getTime() - startDate.getTime()
-        const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)))
-        const factor = Math.pow(1 + DAILY_RATE, days)
-        
-        totalCost += amount
-        currentValue += amount * factor
-      } else if (tx.type === 'Sell') {
-        const amount = parseFloat(tx.unit_price || '0')
-        totalCost -= amount
-        // Il prelievo riduce il valore proporzionalmente
-        const reductionRatio = totalCost > 0 ? amount / (totalCost + amount) : 0
-        currentValue -= currentValue * reductionRatio
-      }
+    // Valori base al 26/11/2025 (dal CSV Portfolio)
+    const baseValues: Record<string, { cost: number, value: number, baseDate: string }> = {
+      'BONDORA': { cost: 2465.02, value: 2922.74, baseDate: '2025-11-26' },
+      'BONDORA_CASH': { cost: 1050.00, value: 1147.34, baseDate: '2025-11-26' }
     }
     
-    return { totalCost: Math.max(0, totalCost), currentValue: Math.max(0, currentValue) }
+    if (!baseValues[instrument]) {
+      return { totalCost: 0, currentValue: 0 }
+    }
+    
+    const base = baseValues[instrument]
+    const today = new Date()
+    const baseDate = new Date(base.baseDate)
+    const diffTime = today.getTime() - baseDate.getTime()
+    const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)))
+    const factor = Math.pow(1 + DAILY_RATE, days)
+    
+    return {
+      totalCost: base.cost,
+      currentValue: base.value * factor
+    }
   }
+
+
 
   async function fetchPrices(instruments: string[]) {
     // ✅ INVARIATA - filtra solo i 3 speciali
@@ -167,8 +166,7 @@ export default function PortfolioPage() {
     // ✅ MODIFICATA SOLO PER BONDORA/BONDORA_CASH - il resto invariato
     Object.values(grouped).forEach((pos: any) => {
       if (pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') {
-        // ✅ USA CRESCITA COMPOSTA
-        const { totalCost, currentValue } = computeBondoraValue(pos.transactions)
+        const { totalCost, currentValue } = computeBondoraValue(pos.instrument)
         pos.currentQuantity = totalCost > 0 ? 1 : 0
         pos.avgCost = totalCost
         pos.totalValue = currentValue
