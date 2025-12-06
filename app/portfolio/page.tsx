@@ -115,6 +115,21 @@ export default function PortfolioPage() {
     const specialInstruments = ['BONDORA', 'BONDORA_CASH', 'BOT.FX', 'EURO']
     const grouped = {} as any
 
+    // ✅ Inizializza EURO subito per tracciare tutti i flussi
+    grouped['EURO'] = {
+      instrument: 'EURO',
+      currency: 'EUR',
+      currentQuantity: 1,
+      avgCost: 0,
+      totalValue: 0,
+      remainingLots: [],
+      transactions: [],
+      sumBuy: 0,
+      sumSell: 0,
+      sumDeposit: 0,
+      sumWithdrawal: 0
+    }
+
     (data ?? []).forEach((tx: any) => {
       const key = tx.instrument
       const isSpecial = specialInstruments.includes(key)
@@ -137,9 +152,8 @@ export default function PortfolioPage() {
 
       grouped[key].transactions.push(tx)
 
-      // ✅ EURO: accumula da Bonifico + traccia Buy/Sell di altri strumenti
+      // ✅ EURO: accumula da Bonifico
       if (key === 'EURO') {
-        // Bonifico EURO: totale positivo = deposit, negativo = withdrawal
         const amount = parseFloat(tx.unit_price || '0')
         if (amount > 0) {
           grouped[key].sumDeposit += amount
@@ -158,23 +172,7 @@ export default function PortfolioPage() {
         
         if (tx.type === 'Buy') {
           grouped[key].remainingLots.push({ quantity, unitPrice })
-          
           // ✅ Buy sottrae liquidità da EURO
-          if (!grouped['EURO']) {
-            grouped['EURO'] = {
-              instrument: 'EURO',
-              currency: 'EUR',
-              currentQuantity: 0,
-              avgCost: 0,
-              totalValue: 0,
-              remainingLots: [],
-              transactions: [],
-              sumBuy: 0,
-              sumSell: 0,
-              sumDeposit: 0,
-              sumWithdrawal: 0
-            }
-          }
           grouped['EURO'].sumBuy += (quantity * unitPrice) + commission
           
         } else if (tx.type === 'Sell' && quantity > 0) {
@@ -190,23 +188,7 @@ export default function PortfolioPage() {
               qtyToSell = 0
             }
           }
-          
           // ✅ Sell aggiunge liquidità a EURO
-          if (!grouped['EURO']) {
-            grouped['EURO'] = {
-              instrument: 'EURO',
-              currency: 'EUR',
-              currentQuantity: 0,
-              avgCost: 0,
-              totalValue: 0,
-              remainingLots: [],
-              transactions: [],
-              sumBuy: 0,
-              sumSell: 0,
-              sumDeposit: 0,
-              sumWithdrawal: 0
-            }
-          }
           grouped['EURO'].sumSell += (quantity * unitPrice) - commission
         }
       }
@@ -223,9 +205,10 @@ export default function PortfolioPage() {
       } else if (pos.instrument === 'EURO') {
         // ✅ EURO: formula deposit - withdrawal - buy + sell
         const netAmount = pos.sumDeposit - pos.sumWithdrawal - pos.sumBuy + pos.sumSell
-        pos.currentQuantity = netAmount > 0 ? 1 : 0
-        pos.avgCost = Math.abs(netAmount)
-        pos.totalValue = Math.abs(netAmount)
+        // ✅ Mantieni sempre EURO visibile (anche se negativo)
+        pos.currentQuantity = 1
+        pos.avgCost = netAmount
+        pos.totalValue = netAmount
       } else if (pos.instrument === 'BOT.FX') {
         // ✅ BOT.FX: netto Buy - Sell
         const netCost = pos.sumBuy - pos.sumSell
@@ -246,7 +229,11 @@ export default function PortfolioPage() {
       }
     })
 
-    const portfolio = Object.values(grouped).filter((p: any) => (p.currentQuantity || 0) > 0.00000001) as any[]
+    // ✅ Filtra solo posizioni > 0 TRANNE EURO che va sempre mostrato
+    const portfolio = Object.values(grouped).filter((p: any) => 
+      p.instrument === 'EURO' || (p.currentQuantity || 0) > 0.00000001
+    ) as any[]
+    
     setPortfolio(portfolio)
 
     const instruments = portfolio.map((p: any) => p.instrument)
