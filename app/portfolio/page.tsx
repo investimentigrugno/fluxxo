@@ -113,22 +113,7 @@ export default function PortfolioPage() {
 
     // ✅ Strumenti con logica speciale (non FIFO standard)
     const specialInstruments = ['BONDORA', 'BONDORA_CASH', 'BOT.FX', 'EURO']
-    const grouped = {} as any
-
-    // ✅ Inizializza EURO subito per tracciare tutti i flussi
-    grouped['EURO'] = {
-      instrument: 'EURO',
-      currency: 'EUR',
-      currentQuantity: 1,
-      avgCost: 0,
-      totalValue: 0,
-      remainingLots: [],
-      transactions: [],
-      sumBuy: 0,
-      sumSell: 0,
-      sumDeposit: 0,
-      sumWithdrawal: 0
-    }
+    const grouped: Record<string, any> = {}
 
     (data ?? []).forEach((tx: any) => {
       const key = tx.instrument
@@ -172,7 +157,23 @@ export default function PortfolioPage() {
         
         if (tx.type === 'Buy') {
           grouped[key].remainingLots.push({ quantity, unitPrice })
-          // ✅ Buy sottrae liquidità da EURO
+          
+          // ✅ Buy sottrae liquidità da EURO - crea EURO se non esiste
+          if (!grouped['EURO']) {
+            grouped['EURO'] = {
+              instrument: 'EURO',
+              currency: 'EUR',
+              currentQuantity: 0,
+              avgCost: 0,
+              totalValue: 0,
+              remainingLots: [],
+              transactions: [],
+              sumBuy: 0,
+              sumSell: 0,
+              sumDeposit: 0,
+              sumWithdrawal: 0
+            }
+          }
           grouped['EURO'].sumBuy += (quantity * unitPrice) + commission
           
         } else if (tx.type === 'Sell' && quantity > 0) {
@@ -188,7 +189,23 @@ export default function PortfolioPage() {
               qtyToSell = 0
             }
           }
-          // ✅ Sell aggiunge liquidità a EURO
+          
+          // ✅ Sell aggiunge liquidità a EURO - crea EURO se non esiste
+          if (!grouped['EURO']) {
+            grouped['EURO'] = {
+              instrument: 'EURO',
+              currency: 'EUR',
+              currentQuantity: 0,
+              avgCost: 0,
+              totalValue: 0,
+              remainingLots: [],
+              transactions: [],
+              sumBuy: 0,
+              sumSell: 0,
+              sumDeposit: 0,
+              sumWithdrawal: 0
+            }
+          }
           grouped['EURO'].sumSell += (quantity * unitPrice) - commission
         }
       }
