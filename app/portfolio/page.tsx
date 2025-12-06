@@ -18,58 +18,83 @@ export default function PortfolioPage() {
     loadPortfolio()
   }, [])
 
-  async function fetchPrices(instruments: string[]) {
-  // ✅ FILTRI MENO RESTRITTIVI - prova TUTTI tranne i 3 speciali
-  const validInstruments = instruments.filter(instrument => 
-    !['BONDORA', 'BONDORA_CASH', 'BOT.FX'].includes(instrument)
-  )
-  
-  console.log('📊 ALL instruments:', instruments)
-  console.log('📊 Valid instruments for yfinance:', validInstruments)
-  
-  if (validInstruments.length === 0) {
-    setLoadingPrices(false)
-    return
-  }
-
-  setLoadingPrices(true)
-  const priceData: Record<string, any> = {}
-  
-  // ✅ PROVA TUTTI i ticker validi (anche se alcuni falliscono)
-  for (const instrument of validInstruments) {
-    try {
-      const res = await fetch('/api/ticker/info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker: instrument })
-      })
-      
-      if (res.ok) {
-        const data = await res.json()
-        if (data.error) {
-          console.warn(`⚠️ ${instrument}:`, data.error)
-        } else {
-          console.log(`✅ ${instrument}: ${data.price} ${data.currency}`)
-          priceData[instrument] = {
-            price: data.price,
-            currency: data.currency,
-            name: data.name,
-            sector: data.sector
-          }
-        }
-      } else {
-        console.warn(`⚠️ HTTP ${res.status} ${instrument}`)
+  // ✅ FUNZIONE per calcolare valore Bondora/Bondora Cash con incremento composto giornaliero
+  function computeBondoraValue(transactions: any[]) {
+    const DAILY_RATE = 0.000164384 // 0,0164384%
+    const today = new Date()
+    
+    let totalCost = 0
+    let currentValue = 0
+    
+    for (const tx of transactions) {
+      if (tx.type === 'Buy') {
+        const amount = parseFloat(tx.unit_price || '0')
+        const startDate = new Date(tx.date)
+        const diffTime = today.getTime() - startDate.getTime()
+        const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)))
+        const factor = Math.pow(1 + DAILY_RATE, days)
+        
+        totalCost += amount
+        currentValue += amount * factor
+      } else if (tx.type === 'Sell') {
+        const amount = parseFloat(tx.unit_price || '0')
+        totalCost -= amount
+        currentValue -= amount // Il prelievo riduce proporzionalmente
       }
-    } catch (error) {
-      console.warn(`❌ Fetch fallito ${instrument}:`, error)
     }
+    
+    return { totalCost, currentValue }
   }
-  
-  console.log('💰 Prezzi caricati:', Object.keys(priceData))
-  setPrices(priceData)
-  setLoadingPrices(false)
-}
 
+  async function fetchPrices(instruments: string[]) {
+    const validInstruments = instruments.filter(instrument => 
+      !['BONDORA', 'BONDORA_CASH', 'BOT.FX'].includes(instrument)
+    )
+    
+    console.log('📊 ALL instruments:', instruments)
+    console.log('📊 Valid instruments for yfinance:', validInstruments)
+    
+    if (validInstruments.length === 0) {
+      setLoadingPrices(false)
+      return
+    }
+
+    setLoadingPrices(true)
+    const priceData: Record<string, any> = {}
+    
+    for (const instrument of validInstruments) {
+      try {
+        const res = await fetch('/api/ticker/info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticker: instrument })
+        })
+        
+        if (res.ok) {
+          const data = await res.json()
+          if (data.error) {
+            console.warn(`⚠️ ${instrument}:`, data.error)
+          } else {
+            console.log(`✅ ${instrument}: ${data.price} ${data.currency}`)
+            priceData[instrument] = {
+              price: data.price,
+              currency: data.currency,
+              name: data.name,
+              sector: data.sector
+            }
+          }
+        } else {
+          console.warn(`⚠️ HTTP ${res.status} ${instrument}`)
+        }
+      } catch (error) {
+        console.warn(`❌ Fetch fallito ${instrument}:`, error)
+      }
+    }
+    
+    console.log('💰 Prezzi caricati:', Object.keys(priceData))
+    setPrices(priceData)
+    setLoadingPrices(false)
+  }
 
   async function loadPortfolio() {
     setLoading(true)
@@ -134,9 +159,16 @@ export default function PortfolioPage() {
       }
     })
 
-    // Calcola quantità, costo medio, valore per special e normali
+    // ✅ Calcola quantità, costo medio, valore per special e normali
     Object.values(grouped).forEach((pos: any) => {
-      if (specialInstruments.includes(pos.instrument)) {
+      if (pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') {
+        // ✅ USA LA FUNZIONE PER CRESCITA COMPOSTA
+        const { totalCost, currentValue } = computeBondoraValue(pos.transactions)
+        pos.currentQuantity = totalCost > 0 ? 1 : 0
+        pos.avgCost = totalCost
+        pos.totalValue = currentValue
+      } else if (pos.instrument === 'BOT.FX') {
+        // BOT.FX resta con logica semplice netto Buy-Sell
         const netCost = pos.sumBuy - pos.sumSell
         pos.currentQuantity = netCost > 0 ? 1 : 0
         pos.avgCost = Math.abs(netCost)
@@ -157,7 +189,6 @@ export default function PortfolioPage() {
     const portfolio = Object.values(grouped).filter((p: any) => (p.currentQuantity || 0) > 0.00000001) as any[]
     setPortfolio(portfolio)
 
-    // Fetch prezzi correnti
     const instruments = portfolio.map((p: any) => p.instrument)
     if (instruments.length > 0) {
       fetchPrices(instruments)
@@ -165,7 +196,7 @@ export default function PortfolioPage() {
 
     // Totali basati su costo medio (prima dei prezzi correnti)
     const totalValue = portfolio.reduce((sum: number, p: any) => sum + (p.totalValue || 0), 0)
-    const totalCost = portfolio.reduce((sum: number, p: any) => sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0)
+    const totalCost = portfolio.reduce((sum: number, p: any) => sum + (p.avgCost || 0), 0)
 
     setTotals({
       value: totalValue,
@@ -180,13 +211,18 @@ export default function PortfolioPage() {
   useEffect(() => {
     if (Object.keys(prices).length > 0 && portfolio.length > 0) {
       const totalValueCurrent = portfolio.reduce((sum: number, p: any) => {
+        // ✅ Per Bondora/Bondora Cash usa totalValue già calcolato con crescita composta
+        if (p.instrument === 'BONDORA' || p.instrument === 'BONDORA_CASH') {
+          return sum + p.totalValue
+        }
+        
         const priceData = prices[p.instrument]
         const currentPrice = priceData?.price || p.avgCost || 0
         return sum + ((p.currentQuantity || 0) * currentPrice)
       }, 0)
       
       const totalCost = portfolio.reduce((sum: number, p: any) => 
-        sum + ((p.currentQuantity || 0) * (p.avgCost || 0)), 0
+        sum + (p.avgCost || 0), 0
       )
 
       setTotals({
@@ -242,7 +278,7 @@ export default function PortfolioPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Asset</TableHead>
-                      <TableHead>Nome</TableHead> {/* ✅ NUOVA COLONNA */}
+                      <TableHead>Nome</TableHead>
                       <TableHead>Qty</TableHead>
                       <TableHead>PMC</TableHead>
                       <TableHead>Price</TableHead>
@@ -252,48 +288,63 @@ export default function PortfolioPage() {
                       <TableHead>Total Value €</TableHead>
                     </TableRow>
                   </TableHeader>
-                    <TableBody>
-                      {portfolio.map((pos: any) => {
-                        const qty = Number(pos.currentQuantity) || 0
-                        const avgCost = Number(pos.avgCost) || 0
-                        const priceData = prices[pos.instrument] as any // ✅ FIX TypeScript
-                        const currentPrice = priceData?.price || avgCost
-                        const currentCurrency = priceData?.currency || pos.currency || 'EUR'
-                        const instrumentName = priceData?.name || pos.instrument
-                        // Rimuovi sector se non serve la colonna
-                        
-                        const totalCostValue = qty * avgCost
-                        const totalValueCurrent = qty * currentPrice
-                        const pnl = totalValueCurrent - totalCostValue
-                        const pnlPercent = totalCostValue !== 0 ? (pnl / totalCostValue) * 100 : 0
+                  <TableBody>
+                    {portfolio.map((pos: any) => {
+                      const qty = Number(pos.currentQuantity) || 0
+                      const avgCost = Number(pos.avgCost) || 0
+                      
+                      let currentPrice: number
+                      let totalValueCurrent: number
+                      let currentCurrency: string
+                      let instrumentName: string
+                      
+                      // ✅ Per Bondora/Bondora Cash usa il valore già calcolato
+                      if (pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') {
+                        currentPrice = pos.totalValue // il "prezzo" è il valore rivalutato
+                        totalValueCurrent = pos.totalValue
+                        currentCurrency = pos.currency || 'EUR'
+                        instrumentName = pos.instrument
+                      } else {
+                        const priceData = prices[pos.instrument] as any
+                        currentPrice = priceData?.price || avgCost
+                        currentCurrency = priceData?.currency || pos.currency || 'EUR'
+                        instrumentName = priceData?.name || pos.instrument
+                        totalValueCurrent = qty * currentPrice
+                      }
+                      
+                      const totalCostValue = avgCost
+                      const pnl = totalValueCurrent - totalCostValue
+                      const pnlPercent = totalCostValue !== 0 ? (pnl / totalCostValue) * 100 : 0
 
-                        return (
-                          <TableRow key={pos.instrument}>
-                            <TableCell className="font-bold">{pos.instrument}</TableCell>
-                            <TableCell title={instrumentName}>
-                              {instrumentName.length > 25 ? `${instrumentName.substring(0, 25)}...` : instrumentName}
-                            </TableCell>
-                            <TableCell>{qty.toFixed(4)}</TableCell>
-                            <TableCell>€ {avgCost.toFixed(2)}</TableCell>
-                            <TableCell>
-                              {priceData ? (
-                                `${currentPrice.toFixed(2)} ${currentCurrency}`
-                              ) : (
-                                <span className="text-gray-400 italic">N/D</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{currentCurrency}</TableCell>
-                            <TableCell className={pnl >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                              € {pnl.toFixed(2)}
-                            </TableCell>
-                            <TableCell className={pnlPercent >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                              {pnlPercent.toFixed(2)}%
-                            </TableCell>
-                            <TableCell>€ {totalValueCurrent.toFixed(2)}</TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
+                      return (
+                        <TableRow key={pos.instrument}>
+                          <TableCell className="font-bold">{pos.instrument}</TableCell>
+                          <TableCell title={instrumentName}>
+                            {instrumentName.length > 25 ? `${instrumentName.substring(0, 25)}...` : instrumentName}
+                          </TableCell>
+                          <TableCell>{qty.toFixed(4)}</TableCell>
+                          <TableCell>€ {avgCost.toFixed(2)}</TableCell>
+                          <TableCell>
+                            {(pos.instrument === 'BONDORA' || pos.instrument === 'BONDORA_CASH') ? (
+                              `€ ${currentPrice.toFixed(2)}`
+                            ) : prices[pos.instrument] ? (
+                              `${currentPrice.toFixed(2)} ${currentCurrency}`
+                            ) : (
+                              <span className="text-gray-400 italic">N/D</span>
+                            )}
+                          </TableCell>
+                          <TableCell>{currentCurrency}</TableCell>
+                          <TableCell className={pnl >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                            € {pnl.toFixed(2)}
+                          </TableCell>
+                          <TableCell className={pnlPercent >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                            {pnlPercent.toFixed(2)}%
+                          </TableCell>
+                          <TableCell>€ {totalValueCurrent.toFixed(2)}</TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
                 </Table>
               </div>
             )}
