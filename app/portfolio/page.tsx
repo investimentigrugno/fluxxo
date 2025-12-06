@@ -130,35 +130,55 @@ export default function PortfolioPage() {
           transactions: [],
           sumBuy: 0,
           sumSell: 0,
-          sumDeposit: 0,      // ✅ Per EURO
-          sumWithdrawal: 0    // ✅ Per EURO
+          sumDeposit: 0,
+          sumWithdrawal: 0
         }
       }
 
       grouped[key].transactions.push(tx)
 
-      if (isSpecial) {
-        if (key === 'EURO') {
-          // ✅ EURO usa Bonifico (senza type, somma tutti i bonifici nel campo Totale/unit_price)
-          const amount = parseFloat(tx.unit_price || '0')
-          if (amount > 0) {
-            grouped[key].sumDeposit += amount
-          } else {
-            grouped[key].sumWithdrawal += Math.abs(amount)
-          }
+      // ✅ EURO: accumula da Bonifico + traccia Buy/Sell di altri strumenti
+      if (key === 'EURO') {
+        // Bonifico EURO: totale positivo = deposit, negativo = withdrawal
+        const amount = parseFloat(tx.unit_price || '0')
+        if (amount > 0) {
+          grouped[key].sumDeposit += amount
         } else {
-          // BONDORA, BONDORA_CASH, BOT.FX usano Buy/Sell
-          grouped[key].sumBuy += (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
-          grouped[key].sumSell += (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
+          grouped[key].sumWithdrawal += Math.abs(amount)
         }
+      } else if (isSpecial) {
+        // BONDORA, BONDORA_CASH, BOT.FX usano Buy/Sell
+        grouped[key].sumBuy += (tx.type === 'Buy' ? parseFloat(tx.unit_price || '0') : 0)
+        grouped[key].sumSell += (tx.type === 'Sell' ? parseFloat(tx.unit_price || '0') : 0)
       } else {
-        // ✅ Strumenti normali: logica FIFO
+        // ✅ Strumenti normali: FIFO + aggiorna liquidità EURO
         const quantity = parseFloat(tx.quantity || '0')
         const unitPrice = parseFloat(tx.unit_price || '0')
+        const commission = parseFloat(tx.commission || '0')
         
         if (tx.type === 'Buy') {
           grouped[key].remainingLots.push({ quantity, unitPrice })
+          
+          // ✅ Buy sottrae liquidità da EURO
+          if (!grouped['EURO']) {
+            grouped['EURO'] = {
+              instrument: 'EURO',
+              currency: 'EUR',
+              currentQuantity: 0,
+              avgCost: 0,
+              totalValue: 0,
+              remainingLots: [],
+              transactions: [],
+              sumBuy: 0,
+              sumSell: 0,
+              sumDeposit: 0,
+              sumWithdrawal: 0
+            }
+          }
+          grouped['EURO'].sumBuy += (quantity * unitPrice) + commission
+          
         } else if (tx.type === 'Sell' && quantity > 0) {
+          // FIFO Sell
           let qtyToSell = quantity
           while (qtyToSell > 0 && grouped[key].remainingLots.length > 0) {
             const lot = grouped[key].remainingLots[0]
@@ -170,6 +190,24 @@ export default function PortfolioPage() {
               qtyToSell = 0
             }
           }
+          
+          // ✅ Sell aggiunge liquidità a EURO
+          if (!grouped['EURO']) {
+            grouped['EURO'] = {
+              instrument: 'EURO',
+              currency: 'EUR',
+              currentQuantity: 0,
+              avgCost: 0,
+              totalValue: 0,
+              remainingLots: [],
+              transactions: [],
+              sumBuy: 0,
+              sumSell: 0,
+              sumDeposit: 0,
+              sumWithdrawal: 0
+            }
+          }
+          grouped['EURO'].sumSell += (quantity * unitPrice) - commission
         }
       }
     })
@@ -183,11 +221,11 @@ export default function PortfolioPage() {
         pos.avgCost = totalCost
         pos.totalValue = currentValue
       } else if (pos.instrument === 'EURO') {
-        // ✅ EURO: saldo = deposit - withdrawal
-        const netAmount = pos.sumDeposit - pos.sumWithdrawal
+        // ✅ EURO: formula deposit - withdrawal - buy + sell
+        const netAmount = pos.sumDeposit - pos.sumWithdrawal - pos.sumBuy + pos.sumSell
         pos.currentQuantity = netAmount > 0 ? 1 : 0
         pos.avgCost = Math.abs(netAmount)
-        pos.totalValue = Math.abs(netAmount)  // 1 EUR = 1 EUR
+        pos.totalValue = Math.abs(netAmount)
       } else if (pos.instrument === 'BOT.FX') {
         // ✅ BOT.FX: netto Buy - Sell
         const netCost = pos.sumBuy - pos.sumSell
